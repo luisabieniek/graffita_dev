@@ -8,8 +8,8 @@ from datetime import datetime
 from sqlalchemy import select
 
 from database import SessionLocal
-from models import Aluno, Turma, Produto, TipoAnimal, Usuario
-from models import Aluno, Turma, Produto, TipoAnimal, Usuario, Animal, Funcionario, Departamento
+from models import Produto, Usuario, Favorito, Carrinho, Endereco, Mensagem
+
 
 
 def listar_usuarios():
@@ -23,29 +23,42 @@ def listar_usuarios():
 def listar_produtos():
     session = SessionLocal()
     try:
-        linhas = session.scalars(select(Produto).order_by(Produto.nome)).all()
+        linhas = session.scalars(select(Produto).order_by(Produto.nomeProduto)).all()
         return [p.to_dict() for p in linhas]
     finally:
         session.close()
 
-
-def listar_turmas():
+def listar_favoritos():
     session = SessionLocal()
     try:
-        linhas = session.scalars(select(Turma).order_by(Turma.codigo)).all()
-        return [t.to_dict() for t in linhas]
+        linhas = session.scalars(select(Favorito).order_by(Favorito.id)).all()
+        return [f.to_dict() for f in linhas]
+    finally:
+        session.close()
+        
+def listar_endereco():
+    session = SessionLocal()
+    try:
+        linhas = session.scalars(select(Endereco).order_by(Endereco.id)).all()
+        return [e.to_dict() for e in linhas]
+    finally:
+        session.close()
+        
+def listar_carrinhos():
+    session = SessionLocal()
+    try:
+        linhas = session.scalars(select(Carrinho).order_by(Carrinho.id)).all()
+        return [c.to_dict() for c in linhas]
     finally:
         session.close()
 
-
-def listar_alunos():
+def listar_mensagens():
     session = SessionLocal()
     try:
-        linhas = session.scalars(select(Aluno).order_by(Aluno.nome)).all()
-        return [a.to_dict() for a in linhas]
+        linhas = session.scalars(select(Mensagem).order_by(Mensagem.id)).all()
+        return [m.to_dict() for m in linhas]
     finally:
         session.close()
-
 
 def _texto_obrigatorio(valor, campo):
     if valor is None or str(valor).strip() == "":
@@ -106,70 +119,99 @@ def cadastrar_produto(dados):
         raise
     finally:
         session.close()
-
-def cadastrar_turma(dados):
-    nome = _texto_obrigatorio(dados.get("nome"), "nome")
-    codigo = _texto_obrigatorio(dados.get("codigo"), "codigo")
+        
+def cadastrar_favorito(dados):
     usuario_id = dados.get("usuario_id")
-    if not usuario_id:
-        raise ValueError("O campo 'usuario_id' é obrigatório.")
+    produto_id = dados.get("produto_id")
+    if not usuario_id or not produto_id:
+        raise ValueError("Os campos 'usuario_id' e 'produto_id' são obrigatórios.")
 
     session = SessionLocal()
     try:
-        usuario = session.get(Usuario, int(usuario_id))
-        if usuario is None:
-            raise ValueError(f"Usuário {usuario_id} não encontrado.")
-
-        turma = Turma(nome=nome, codigo=codigo, usuario_id=usuario.id)
-        session.add(turma)
+        produto = session.get(Produto, int(produto_id))
+        if produto is None:
+            raise ValueError(f"Produto {produto_id} não encontrado.")
+        
+        favorito = Favorito(usuario_id=usuario_id, produto_id=produto.id)
+        session.add(favorito)
         session.commit()
-        session.refresh(turma)
-        return turma.to_dict()
+        session.refresh(favorito)
+        return favorito.to_dict()
     except Exception:
         session.rollback()
         raise
     finally:
         session.close()
-
-
-def cadastrar_aluno(dados):
-    nome = _texto_obrigatorio(dados.get("nome"), "nome")
-    email = _texto_opcional(dados.get("email"))
-    endereco = _texto_obrigatorio(dados.get("endereco"), "endereco")
-    turma_id = dados.get("turma_id")
-    if not turma_id:
-        raise ValueError("O campo 'turma_id' é obrigatório.")
+        
+def cadastrar_endereco(dados):
+    cep = _texto_obrigatorio(dados.get("cep"), "cep")
+    rua = _texto_obrigatorio(dados.get("rua"), "rua")
+    numero = dados.get("numero")
+    bairro = _texto_obrigatorio(dados.get("bairro"), "bairro")
+    cidade = _texto_obrigatorio(dados.get("cidade"), "cidade")
+    estado = _texto_obrigatorio(dados.get("estado"), "estado")
+    complemento = _texto_opcional(dados.get("complemento"))
+    usuario_id = dados.get("usuario_id")
+    if not cep or not rua or not numero or not bairro or not cidade or not estado or not usuario_id:
+        raise ValueError("Todos os campos são obrigatórios.")
 
     session = SessionLocal()
     try:
-        turma = session.get(Turma, int(turma_id))
-        if turma is None:
-            raise ValueError(f"Turma {turma_id} não encontrada.")
-
-        aluno = Aluno(nome=nome, email=email, turma_id=turma.id, endereco=endereco)
-        session.add(aluno)
-        session.commit()
-        session.refresh(aluno)
-        return aluno.to_dict()
-    except Exception:
-        session.rollback()
-        raise
-    finally:
-        session.close()
-
-
-
-def cadastrar_tipoAnimal(dados):
-    nome = _texto_obrigatorio(dados.get("nome"), "nome")
-    session = SessionLocal()
-    try:
-        tipoAnimal = TipoAnimal(
-            nome=nome
+        endereco = Endereco(
+            cep=cep,
+            rua=rua,
+            numero=numero,
+            bairro=bairro,
+            cidade=cidade,
+            estado=estado,
+            complemento=complemento,
+            usuario_id=usuario_id,
         )
-        session.add(tipoAnimal)
+        session.add(endereco)
         session.commit()
-        session.refresh(tipoAnimal)
-        return tipoAnimal.to_dict()
+        session.refresh(endereco)
+        return endereco.to_dict()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+        
+        
+def cadastrar_carrinho(dados):
+    usuario_id = _texto_obrigatorio(dados.get("usuario_id"), "usuario_id")
+    produto_id = _texto_obrigatorio(dados.get("produto_id"), "produto_id")
+
+    session = SessionLocal()
+    try:
+        produto = session.get(Produto, int(produto_id))
+        if produto is None:
+            raise ValueError(f"produto {produto_id} não encontrado.")
+        carrinho = Carrinho(usuario_id=usuario_id, produto_id=produto_id)
+        session.add(carrinho)
+        session.commit()
+        session.refresh(carrinho)
+        return carrinho.to_dict()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+        
+        
+def cadastrar_mensagem(dados):
+    descricao = _texto_obrigatorio(dados.get("descricao"), "descricao")
+    usuario_id = dados.get("usuario_id")
+    if not descricao or not usuario_id:
+        raise ValueError("Os campos 'descricao' e 'usuario_id' são obrigatórios.")
+
+    session = SessionLocal()
+    try:
+        mensagem = Mensagem(descricao=descricao, usuario_id=usuario_id)
+        session.add(mensagem)
+        session.commit()
+        session.refresh(mensagem)
+        return mensagem.to_dict()
     except Exception:
         session.rollback()
         raise

@@ -188,3 +188,11 @@ tbody tr:hover { background: #f8fafc; }
   color: #6b7280;
   text-align: center;
 }
+
+.img-tabela {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 4px;
+  display: block;
+}

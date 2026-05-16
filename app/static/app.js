@@ -3,43 +3,81 @@ const COLUNAS = {
     { chave: "id", titulo: "ID" },
     { chave: "nome", titulo: "Nome" },
     { chave: "email", titulo: "E-mail" },
+    { chave: "cpf", titulo: "CPF" },
   ],
-  turmas: [
+  produtos: [
     { chave: "id", titulo: "ID" },
-    { chave: "codigo", titulo: "Código" },
-    { chave: "nome", titulo: "Nome" },
-    { chave: "usuario_id", titulo: "Professor" },
+    { chave: "nomeProduto", titulo: "Produto" },
+    { chave: "preco", titulo: "Preço" },
+    { chave: "disponivel", titulo: "Disp." },
+    { chave: "imagem", titulo: "Foto" },
   ],
-  alunos: [
+  enderecos: [
     { chave: "id", titulo: "ID" },
-    { chave: "nome", titulo: "Nome" },
-    { chave: "email", titulo: "E-mail" },
-    { chave: "endereco", titulo: "Endereço" },
-    { chave: "turma_id", titulo: "Turma" },
+    { chave: "rua", titulo: "Rua" },
+    { chave: "numero", titulo: "Nº" },
+    { chave: "cidade", titulo: "Cidade" },
+    { chave: "usuario_id", titulo: "Usuário" },
+  ],
+  favoritos: [
+    { chave: "id", titulo: "ID" },
+    { chave: "usuario_id", titulo: "ID Usuário" },
+    { chave: "produto_id", titulo: "ID Produto" },
+  ],
+  carrinhos: [
+    { chave: "id", titulo: "ID" },
+    { chave: "usuario_id", titulo: "ID Usuário" },
+    { chave: "produto_id", titulo: "ID Produto" },
+  ],
+  mensagens: [
+    { chave: "id", titulo: "ID" },
+    { chave: "descricao", titulo: "Descrição" },
+    { chave: "usuario_id", titulo: "ID Usuário" },
   ],
 };
 
 const TITULOS = {
   usuarios: { lista: "Usuários", form: "Novo usuário" },
-  turmas: { lista: "Turmas", form: "Nova turma" },
-  alunos: { lista: "Alunos", form: "Novo aluno" },
+  produtos: { lista: "Produtos", form: "Novo Produto" },
+  enderecos: { lista: "Endereços", form: "Novo Endereço" },
+  favoritos: { lista: "Favoritos", form: "Adicionar Favorito" },
+  carrinhos: { lista: "Carrinho", form: "Adicionar ao Carrinho" },
+  mensagens: { lista: "Mensagens", form: "Nova Mensagem" },
 };
 
 const CAMPOS = {
   usuarios: [
     { nome: "nome", rotulo: "Nome", obrigatorio: true },
     { nome: "email", rotulo: "E-mail", tipo: "email" },
+    { nome: "senha", rotulo: "Senha", tipo: "password", obrigatorio: true },
+    { nome: "cpf", rotulo: "CPF", obrigatorio: true },
   ],
-  turmas: [
-    { nome: "nome", rotulo: "Nome", obrigatorio: true },
-    { nome: "codigo", rotulo: "Código", obrigatorio: true },
-    { nome: "usuario_id", rotulo: "Professor", tipo: "select", origem: "usuarios", obrigatorio: true },
+  produtos: [
+    { nome: "nomeProduto", rotulo: "Nome do Produto", obrigatorio: true },
+    { nome: "preco", rotulo: "Preço", tipo: "number", obrigatorio: true },
+    { nome: "descricao", rotulo: "Descrição" },
+    { nome: "imagem", rotulo: "URL da Imagem" },
   ],
-  alunos: [
-    { nome: "nome", rotulo: "Nome", obrigatorio: true },
-    { nome: "email", rotulo: "E-mail", tipo: "email" },
-    { nome: "endereco", rotulo: "Endereço", obrigatorio: true },
-    { nome: "turma_id", rotulo: "Turma", tipo: "select", origem: "turmas", obrigatorio: true },
+  enderecos: [
+    { nome: "cep", rotulo: "CEP", obrigatorio: true },
+    { nome: "rua", rotulo: "Rua", obrigatorio: true },
+    { nome: "numero", rotulo: "Número", tipo: "number", obrigatorio: true },
+    { nome: "bairro", rotulo: "Bairro", obrigatorio: true },
+    { nome: "cidade", rotulo: "Cidade", obrigatorio: true },
+    { nome: "estado", rotulo: "Estado", obrigatorio: true },
+    { nome: "usuario_id", rotulo: "Usuário", tipo: "select", origem: "usuarios", obrigatorio: true },
+  ],
+  favoritos: [
+    { nome: "usuario_id", rotulo: "Usuário", tipo: "select", origem: "usuarios", obrigatorio: true },
+    { nome: "produto_id", rotulo: "Produto", tipo: "select", origem: "produtos", obrigatorio: true },
+  ],
+  carrinhos: [
+    { nome: "usuario_id", rotulo: "Usuário", tipo: "select", origem: "usuarios", obrigatorio: true },
+    { nome: "produto_id", rotulo: "Produto", tipo: "select", origem: "produtos", obrigatorio: true },
+  ],
+  mensagens: [
+    { nome: "descricao", rotulo: "Descrição", obrigatorio: true },
+    { nome: "usuario_id", rotulo: "Usuário", tipo: "select", origem: "usuarios", obrigatorio: true },
   ],
 };
 
@@ -53,8 +91,10 @@ const formulario = document.getElementById("formulario");
 const mensagemFormulario = document.getElementById("mensagem-formulario");
 const botaoRecarregar = document.getElementById("botao-recarregar");
 const abas = document.querySelectorAll(".aba");
+const seletorUsuarioAtivo = document.getElementById("usuario-ativo");
 
 let tipoAtual = "usuarios";
+let usuarioLogadoId = null;
 
 async function buscar(tipo) {
   const resposta = await fetch(`/api/${tipo}`);
@@ -76,9 +116,23 @@ async function carregar(tipo) {
   elementoStatus.textContent = "Carregando...";
 
   try {
-    const dados = await buscar(tipo);
+    let dados = await buscar(tipo);
+    
+    // Filtrar dados para mostrar apenas o que pertence ao usuário logado
+    const tiposPessoais = ["carrinhos", "favoritos", "enderecos", "mensagens"];
+    if (tiposPessoais.includes(tipo)) {
+      if (!usuarioLogadoId) {
+        dados = [];
+        elementoStatus.textContent = "Selecione um usuário no topo para ver seus dados.";
+      } else {
+        dados = dados.filter(item => String(item.usuario_id) === String(usuarioLogadoId));
+        elementoStatus.textContent = `${dados.length} registro(s) seu(s) carregado(s).`;
+      }
+    } else {
+      elementoStatus.textContent = `${dados.length} registro(s) carregado(s).`;
+    }
+
     renderizarLinhas(tipo, dados);
-    elementoStatus.textContent = `${dados.length} registro(s) carregado(s).`;
   } catch (erro) {
     elementoStatus.textContent = `Falha ao carregar: ${erro.message}`;
     elementoStatus.classList.add("erro");
@@ -111,7 +165,14 @@ function renderizarLinhas(tipo, dados) {
     for (const coluna of COLUNAS[tipo]) {
       const td = document.createElement("td");
       const valor = item[coluna.chave];
-      td.textContent = valor === null || valor === undefined ? "—" : valor;
+      if (coluna.chave === "imagem" && valor) {
+        const img = document.createElement("img");
+        img.src = valor;
+        img.className = "img-tabela";
+        td.appendChild(img);
+      } else {
+        td.textContent = valor === null || valor === undefined ? "—" : valor;
+      }
       tr.appendChild(td);
     }
     elementoCorpo.appendChild(tr);
@@ -148,6 +209,10 @@ async function renderizarFormulario(tipo) {
           option.textContent = rotuloItem(campo.origem, item);
           select.appendChild(option);
         }
+        // Auto-selecionar se for o campo de usuário e tivermos alguém logado
+        if (campo.nome === "usuario_id" && usuarioLogadoId) {
+          select.value = usuarioLogadoId;
+        }
       } catch (erro) {
         const option = document.createElement("option");
         option.disabled = true;
@@ -171,7 +236,7 @@ async function renderizarFormulario(tipo) {
 
 function rotuloItem(origem, item) {
   if (origem === "usuarios") return `${item.nome} (id ${item.id})`;
-  if (origem === "turmas") return `${item.codigo} - ${item.nome}`;
+  if (origem === "produtos") return `${item.nomeProduto} - R$ ${item.preco}`;
   return `${item.id}`;
 }
 
@@ -214,6 +279,12 @@ async function enviarFormulario(evento) {
     mensagemFormulario.textContent = "Cadastrado com sucesso.";
     mensagemFormulario.classList.add("sucesso");
     formulario.reset();
+    
+    // Se cadastrou um usuário, atualiza a lista de login
+    if (tipoAtual === "usuarios") {
+        await atualizarSeletorUsuarios();
+    }
+
     await carregar(tipoAtual);
   } catch (erro) {
     mensagemFormulario.textContent = erro.message;
@@ -231,7 +302,31 @@ abas.forEach((aba) => {
   });
 });
 
+async function atualizarSeletorUsuarios() {
+    const usuarios = await buscar("usuarios");
+    const valorAntigo = seletorUsuarioAtivo.value;
+    seletorUsuarioAtivo.innerHTML = '<option value="">Ninguém selecionado</option>';
+    usuarios.forEach(u => {
+        const opt = document.createElement("option");
+        opt.value = u.id;
+        opt.textContent = u.nome;
+        seletorUsuarioAtivo.appendChild(opt);
+    });
+    seletorUsuarioAtivo.value = valorAntigo;
+}
+
+seletorUsuarioAtivo.addEventListener("change", (e) => {
+    usuarioLogadoId = e.target.value;
+    carregar(tipoAtual);
+});
+
 botaoRecarregar.addEventListener("click", () => carregar(tipoAtual));
 formulario.addEventListener("submit", enviarFormulario);
 
-carregar("usuarios");
+// Inicialização
+async function init() {
+    await atualizarSeletorUsuarios();
+    await carregar("usuarios");
+}
+
+init();

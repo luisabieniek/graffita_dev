@@ -2,15 +2,18 @@ import flask as fk
 from sqlalchemy.exc import IntegrityError
 
 from servicos import (
-    cadastrar_aluno,
-    cadastrar_turma,
-    listar_alunos,
-    cadastrar_usuario, # Importa cadastrar_usuario
-    listar_usuarios, # Importa listar_usuarios
-    listar_turmas,
+    cadastrar_usuario,
+    listar_usuarios,
     cadastrar_produto,
     listar_produtos,
-    cadastrar_tipoAnimal
+    cadastrar_favorito,
+    listar_favoritos,
+    cadastrar_endereco,
+    listar_endereco,
+    cadastrar_carrinho,
+    listar_carrinhos,
+    cadastrar_mensagem,
+    listar_mensagens
 )
 
 bp = fk.Blueprint("api", __name__, url_prefix="/api")
@@ -20,25 +23,20 @@ def _erro(mensagem, status=400):
     return fk.jsonify({"erro": mensagem}), status
 
 
-@bp.get("/professores")
-def get_professores(): # Renomeado para clareza
-    return fk.jsonify(listar_usuarios()) # Chama listar_usuarios do servicos.py
+@bp.get("/usuarios")
+def get_usuarios():
+    return fk.jsonify(listar_usuarios())
 
 
-@bp.post("/professores")
-def post_professores(): # Renomeado para clareza
+@bp.post("/usuarios")
+def post_usuarios():
     dados = fk.request.get_json(silent=True) or {}
     try:
-        return fk.jsonify(cadastrar_usuario(dados)), 201 # Chama cadastrar_usuario do servicos.py
+        return fk.jsonify(cadastrar_usuario(dados)), 201
     except ValueError as exc:
         return _erro(str(exc))
     except IntegrityError:
-        return _erro("Já existe um professor com este e-mail.", 409)
-
-
-@bp.get("/turmas")
-def turmas():
-    return fk.jsonify(listar_turmas())
+        return _erro("Já existe um usuário com este e-mail ou CPF.", 409)
 
 
 @bp.get("/produtos")
@@ -55,48 +53,55 @@ def criar_produtos():
     except IntegrityError:
         return _erro("Erro de integridade ao cadastrar produto.", 409)
 
+@bp.get("/favoritos")
+def favoritos():
+    return fk.jsonify(listar_favoritos())
 
-@bp.post("/turmas")
-def criar_turma():
+@bp.post("/favoritos")
+def criar_favorito():
     dados = fk.request.get_json(silent=True) or {}
     try:
-        return fk.jsonify(cadastrar_turma(dados)), 201
+        return fk.jsonify(cadastrar_favorito(dados)), 201
     except ValueError as exc:
         return _erro(str(exc))
-    except IntegrityError:
-        return _erro("Já existe uma turma com este código.", 409)
 
-@bp.get("/alunos")
-def alunos():
-    return fk.jsonify(listar_alunos())
+@bp.get("/enderecos")
+def enderecos():
+    return fk.jsonify(listar_endereco())
 
-
-@bp.post("/alunos")
-def criar_aluno():
+@bp.post("/enderecos")
+def criar_endereco():
     dados = fk.request.get_json(silent=True) or {}
     try:
-        return fk.jsonify(cadastrar_aluno(dados)), 201
+        return fk.jsonify(cadastrar_endereco(dados)), 201
     except ValueError as exc:
         return _erro(str(exc))
-    except IntegrityError as exc:
-        orig = str(exc.orig) if getattr(exc, "orig", None) else str(exc)
-        orig_l = orig.lower()
-        if "unique" in orig_l and "email" in orig_l:
-            return _erro("Já existe um aluno com este e-mail.", 409)
-        return _erro(
-            "Não foi possível cadastrar o aluno (restrição do banco de dados).",
-            409,
-        )
         
-@bp.post("/tipoAnimais")
-def criar_tipo_animais():
+@bp.get("/carrinhos")
+def carrinhos():
+    return fk.jsonify(listar_carrinhos())
+
+@bp.post("/carrinhos")
+def criar_carrinho():
     dados = fk.request.get_json(silent=True) or {}
     try:
-        return fk.jsonify(cadastrar_tipoAnimal(dados)), 201
+        return fk.jsonify(cadastrar_carrinho(dados)), 201
     except ValueError as exc:
         return _erro(str(exc))
-    except IntegrityError:
-        return _erro("Erro ao cadastrar tipo de animal.", 409)
+
+@bp.get("/mensagens")
+def mensagens():
+    return fk.jsonify(listar_mensagens())
+
+@bp.post("/mensagens")
+def criar_mensagem():
+    dados = fk.request.get_json(silent=True) or {}
+    try:
+        return fk.jsonify(cadastrar_mensagem(dados)), 201
+    except ValueError as exc:
+        return _erro(str(exc))
+
+
 
 paginas = fk.Blueprint("paginas", __name__)
 

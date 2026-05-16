@@ -34,6 +34,7 @@ def populate_database():
                 preco=10.00,
                 descricao="Descrição 1",
                 disponivel=True,
+                imagem="https://placehold.co/100x100?text=Produto+1",
                 created_at=datetime.now(),
             ),
             models.Produto(
@@ -41,140 +42,74 @@ def populate_database():
                 preco=20.00,
                 descricao="Descrição 2",
                 disponivel=True,
+                imagem="https://placehold.co/100x100?text=Produto+2",
                 created_at=datetime.now(),
             ),
         ]
         session.add_all(produtos)
         session.flush()
-
-
-        print("Inserindo turmas...")
-        turmas = [
-            models.Turma(
-                nome="luisalinda123",
-                codigo="MAT-2026-A",
+        
+        print("Inserindo favoritos...")
+        favoritos = [
+            models.Favorito(
+                usuario_id=usuarios[0].id,
+                produto_id=produtos[0].id,
+            ),
+        ]
+        session.add_all(favoritos)
+        session.flush()
+        
+        print("Inserindo endereços...")
+        enderecos = [
+            models.Endereco(
+                cep="12345678",
+                rua="Rua A",
+                numero=123,
+                bairro="Bairro X",
+                cidade="Cidade Y",
+                estado="Estado Z",
+                complemento="Complemento 1",
                 usuario_id=usuarios[0].id,
             ),
-            models.Turma(
-                nome="Física B",
-                codigo="FIS-2026-B",
+        ]
+        session.add_all(enderecos)
+        session.flush()
+        
+        print("Inserindo carrinhos...")
+        carrinhos = [
+            models.Carrinho(
+                usuario_id=usuarios[0].id,
+                produto_id=produtos[0].id,
+            ),
+        ]
+        session.add_all(carrinhos)
+        session.flush()
+        
+        print("Inserindo mensagens...")
+        mensagens = [
+            models.Mensagem(
+                descricao="Mensagem 1",
                 usuario_id=usuarios[0].id,
             ),
-            models.Turma(
-                nome="Português A",
-                codigo="PORT-2026-A",
-                usuario_id=usuarios[1].id,
-            ),
         ]
-        session.add_all(turmas)
+        session.add_all(mensagens)
         session.flush()
-
-        print("Inserindo alunos...")
-        alunos = [
-            models.Aluno(
-                nome="Ana Costa",
-                email="ana@escola.example",
-                turma_id=turmas[0].id,
-                endereco="asdasdsad"
-            ),
-            models.Aluno(
-                nome="Bruno Lima",
-                email="bruno@escola.example",
-                turma_id=turmas[0].id,
-                endereco="asdasdsad"
-            ),
-            models.Aluno(
-                nome="Carla Dias",
-                email="carla@escola.example",
-                turma_id=turmas[1].id,
-                endereco="asdasdsad"
-            ),
-            models.Aluno(
-                nome="Diego Rocha",
-                email="diego@escola.example",
-                turma_id=turmas[2].id,
-                endereco="asdasdsad"
-            ),
-        ]
-        session.add_all(alunos)
-####
-
-        print("Inserindo Departamentos...")
-        departamentos = [
-            models.Departamento(
-                nome="Contabilidade"
-            ),
-            models.Departamento(
-                nome="Financeiro"
-            ),
-        ]
-        session.add_all(departamentos)
-        session.flush()
-
-####
-
-#####
-        print("Inserindo TipoAnimais...")
-        tipoAnimais = [
-            models.TipoAnimal(
-                nome="Canino"
-            ),
-            models.TipoAnimal(
-                nome="Felino",
-            ),
-        ]
-        session.add_all(tipoAnimais)
-        session.flush()
-
-###
-        print("Inserindo Animais...")
-        animais = [
-            models.Animal(
-                nome="Dante",
-                id_tipo_animal=tipoAnimais[0].id,
-                created_at=datetime.now(),
-            ),
-            models.Animal(
-                nome="Toby",
-                id_tipo_animal=tipoAnimais[1].id,
-                created_at=datetime.now(),
-            ),
-        ]
-        session.add_all(animais)
-        session.flush()
-
-
-###
-        print("Inserindo funcionários...")
-        funcionarios = [
-            models.Funcionario(
-                nome="Daniel Eletronicos",
-                email="eletronico@gmail.com",
-                senha="123456",
-                id_departamento=departamentos[0].id,
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
-            ),
-            models.Funcionario(
-                nome="Daniel Livros",
-                email="livro@gmail.com",
-                senha="123456",
-                id_departamento=departamentos[1].id,
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
-            ),
-        ]
-        session.add_all(funcionarios)
         
         session.commit()
         print("\nSucesso! Commit concluído.")
 
-        np = len(session.scalars(select(models.Usuario)).all())
-        nt = len(session.scalars(select(models.Turma)).all())
-        na = len(session.scalars(select(models.Aluno)).all())
-        print(f"- Usuários: {np}")
-        print(f"- Turmas: {nt}")
-        print(f"- Alunos: {na}")
+        nu = len(session.scalars(select(models.Usuario)).all())
+        np = len(session.scalars(select(models.Produto)).all())
+        nf = len(session.scalars(select(models.Favorito)).all())
+        ne = len(session.scalars(select(models.Endereco)).all())
+        nc = len(session.scalars(select(models.Carrinho)).all())
+        nm = len(session.scalars(select(models.Mensagem)).all())
+        print(f"- Usuários: {nu}")
+        print(f"- Produtos: {np}")
+        print(f"- Favoritos: {nf}")
+        print(f"- Endereços: {ne}")
+        print(f"- Carrinhos: {nc}")
+        print(f"- Mensagens: {nm}")
 
     except Exception as e:
         print(f"Ocorreu um erro: {e}")

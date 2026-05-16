@@ -3,27 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Escola - Painel</title>
+  <title>Graffita Dev - E-commerce</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
 </head>
 <body>
   <header class="topo">
-    <h1>Escola</h1>
+    <h1>Graffita Dev</h1>
     <p class="subtitulo">Consumindo a API <code>/api/...</code></p>
+    
+    <div class="seletor-usuario">
+      <label for="usuario-ativo"><strong>Usuário Ativo:</strong></label>
+      <select id="usuario-ativo"><option value="">Ninguém selecionado</option></select>
+    </div>
   </header>
 
   <nav class="abas">
-    <button class="aba ativa" data-tipo="professores">Professores</button>
-    <button class="aba" data-tipo="turmas">Turmas</button>
-    <button class="aba" data-tipo="alunos">Alunos</button>
+    <button class="aba ativa" data-tipo="usuarios">Usuários</button>
     <button class="aba" data-tipo="produtos">Produtos</button>
-    <button class="aba" data-tipo="tipos">Tipos</button>
-    <button class="aba" data-tipo="tipoAnimais">Tipos de Animais</button>
+    <button class="aba" data-tipo="enderecos">Endereços</button>
+    <button class="aba" data-tipo="favoritos">Favoritos</button>
+    <button class="aba" data-tipo="carrinhos">Carrinho</button>
+    <button class="aba" data-tipo="mensagens">Mensagens</button>
   </nav>
 
   <main class="conteudo">
     <section id="painel-formulario">
-      <h2 id="titulo-formulario">Novo professor</h2>
+      <h2 id="titulo-formulario">Novo usuário</h2>
       <form id="formulario" novalidate>
         <div id="campos" class="grade-campos"></div>
         <div class="acoes-formulario">
@@ -35,7 +40,7 @@
 
     <section id="painel-tabela">
       <div class="cabecalho-painel">
-        <h2 id="titulo-lista">Professores</h2>
+        <h2 id="titulo-lista">Usuários</h2>
         <button id="botao-recarregar" type="button">Recarregar</button>
       </div>
       <div id="status" class="status"></div>
