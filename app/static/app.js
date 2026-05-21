@@ -9,8 +9,15 @@ const COLUNAS = {
     { chave: "id", titulo: "ID" },
     { chave: "nomeProduto", titulo: "Produto" },
     { chave: "preco", titulo: "Preço" },
+    { chave: "estoque", titulo: "Estoque" },
     { chave: "disponivel", titulo: "Disp." },
     { chave: "imagem", titulo: "Foto" },
+  ],
+  pedidos: [
+    { chave: "id", titulo: "ID" },
+    { chave: "total", titulo: "Total" },
+    { chave: "status", titulo: "Status" },
+    { chave: "created_at", titulo: "Data" },
   ],
   enderecos: [
     { chave: "id", titulo: "ID" },
@@ -29,20 +36,23 @@ const COLUNAS = {
     { chave: "usuario_id", titulo: "ID Usuário" },
     { chave: "produto_id", titulo: "ID Produto" },
   ],
-  mensagens: [
+  inspiracoes: [
     { chave: "id", titulo: "ID" },
+    { chave: "titulo", titulo: "Título" },
     { chave: "descricao", titulo: "Descrição" },
     { chave: "usuario_id", titulo: "ID Usuário" },
+    { chave: "imagem", titulo: "Foto" },
   ],
 };
 
 const TITULOS = {
   usuarios: { lista: "Usuários", form: "Novo usuário" },
   produtos: { lista: "Produtos", form: "Novo Produto" },
+  pedidos: { lista: "Pedidos", form: "Ver Pedidos" },
   enderecos: { lista: "Endereços", form: "Novo Endereço" },
   favoritos: { lista: "Favoritos", form: "Adicionar Favorito" },
   carrinhos: { lista: "Carrinho", form: "Adicionar ao Carrinho" },
-  mensagens: { lista: "Mensagens", form: "Nova Mensagem" },
+  inspiracoes: { lista: "Inspirações", form: "Nova Inspiração" },
 };
 
 const CAMPOS = {
@@ -56,7 +66,8 @@ const CAMPOS = {
     { nome: "nomeProduto", rotulo: "Nome do Produto", obrigatorio: true },
     { nome: "preco", rotulo: "Preço", tipo: "number", obrigatorio: true },
     { nome: "descricao", rotulo: "Descrição" },
-    { nome: "imagem", rotulo: "URL da Imagem" },
+    { nome: "usuario_id", rotulo: "Vendedor", tipo: "select", origem: "usuarios", obrigatorio: true },
+    { nome: "imagem", rotulo: "Foto do Produto", tipo: "file" },
   ],
   enderecos: [
     { nome: "cep", rotulo: "CEP", obrigatorio: true },
@@ -75,9 +86,12 @@ const CAMPOS = {
     { nome: "usuario_id", rotulo: "Usuário", tipo: "select", origem: "usuarios", obrigatorio: true },
     { nome: "produto_id", rotulo: "Produto", tipo: "select", origem: "produtos", obrigatorio: true },
   ],
-  mensagens: [
+  pedidos: [], // Geralmente criado via Checkout, não formulário direto aqui
+  inspiracoes: [
+    { nome: "titulo", rotulo: "Título", obrigatorio: true },
     { nome: "descricao", rotulo: "Descrição", obrigatorio: true },
     { nome: "usuario_id", rotulo: "Usuário", tipo: "select", origem: "usuarios", obrigatorio: true },
+    { nome: "imagem", rotulo: "Foto da Inspiração", tipo: "file" },
   ],
 };
 
@@ -119,13 +133,17 @@ async function carregar(tipo) {
     let dados = await buscar(tipo);
     
     // Filtrar dados para mostrar apenas o que pertence ao usuário logado
-    const tiposPessoais = ["carrinhos", "favoritos", "enderecos", "mensagens"];
+    const tiposPessoais = ["carrinhos", "favoritos", "enderecos", "inspiracoes", "pedidos"];
     if (tiposPessoais.includes(tipo)) {
       if (!usuarioLogadoId) {
         dados = [];
         elementoStatus.textContent = "Selecione um usuário no topo para ver seus dados.";
       } else {
-        dados = dados.filter(item => String(item.usuario_id) === String(usuarioLogadoId));
+        dados = dados.filter(item => {
+          // Pedidos usam comprador_id, os outros usam usuario_id
+          const idDono = item.usuario_id || item.comprador_id;
+          return String(idDono) === String(usuarioLogadoId);
+        });
         elementoStatus.textContent = `${dados.length} registro(s) seu(s) carregado(s).`;
       }
     } else {
@@ -249,17 +267,34 @@ async function enviarFormulario(evento) {
   evento.preventDefault();
   limparMensagem();
 
-  const dados = {};
-  for (const campo of CAMPOS[tipoAtual]) {
-    const elemento = formulario.elements[campo.nome];
-    const valor = elemento.value.trim();
-    if (campo.obrigatorio && !valor) {
-      mensagemFormulario.textContent = `Preencha ${campo.rotulo}.`;
-      mensagemFormulario.classList.add("erro");
-      elemento.focus();
-      return;
+  let corpoRequisicao;
+  let cabecalhos = {};
+
+  if (tipoAtual === "produtos" || tipoAtual === "inspiracoes") {
+    corpoRequisicao = new FormData();
+    for (const campo of CAMPOS[tipoAtual]) {
+      const elemento = formulario.elements[campo.nome];
+      if (campo.tipo === "file") {
+        if (elemento.files[0]) corpoRequisicao.append(campo.nome, elemento.files[0]);
+      } else {
+        corpoRequisicao.append(campo.nome, elemento.value.trim());
+      }
     }
-    if (valor !== "") dados[campo.nome] = valor;
+  } else {
+    const dados = {};
+    for (const campo of CAMPOS[tipoAtual]) {
+      const elemento = formulario.elements[campo.nome];
+      const valor = elemento.value.trim();
+      if (campo.obrigatorio && !valor) {
+        mensagemFormulario.textContent = `Preencha ${campo.rotulo}.`;
+        mensagemFormulario.classList.add("erro");
+        elemento.focus();
+        return;
+      }
+      if (valor !== "") dados[campo.nome] = valor;
+    }
+    corpoRequisicao = JSON.stringify(dados);
+    cabecalhos["Content-Type"] = "application/json";
   }
 
   const botao = formulario.querySelector("button[type=submit]");
@@ -267,8 +302,8 @@ async function enviarFormulario(evento) {
   try {
     const resposta = await fetch(`/api/${tipoAtual}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(dados),
+      headers: (tipoAtual === "produtos" || tipoAtual === "inspiracoes") ? {} : cabecalhos,
+      body: corpoRequisicao,
     });
 
     const corpo = await resposta.json().catch(() => ({}));
@@ -282,7 +317,9 @@ async function enviarFormulario(evento) {
     
     // Se cadastrou um usuário, atualiza a lista de login
     if (tipoAtual === "usuarios") {
+        usuarioLogadoId = corpo.id; // Login Automático
         await atualizarSeletorUsuarios();
+        seletorUsuarioAtivo.value = usuarioLogadoId;
     }
 
     await carregar(tipoAtual);

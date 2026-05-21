@@ -12,8 +12,9 @@ from servicos import (
     listar_endereco,
     cadastrar_carrinho,
     listar_carrinhos,
-    cadastrar_mensagem,
-    listar_mensagens
+    cadastrar_inspiracao,
+    listar_inspiracoes,
+    listar_pedidos
 )
 
 bp = fk.Blueprint("api", __name__, url_prefix="/api")
@@ -45,9 +46,15 @@ def produtos():
 
 @bp.post("/produtos")
 def criar_produtos():
-    dados = fk.request.get_json(silent=True) or {}
+    if fk.request.files:
+        dados = fk.request.form.to_dict()
+        arquivo = fk.request.files.get("imagem")
+    else:
+        dados = fk.request.get_json(silent=True) or {}
+        arquivo = None
+
     try:
-        return fk.jsonify(cadastrar_produto(dados)), 201
+        return fk.jsonify(cadastrar_produto(dados, arquivo)), 201
     except ValueError as exc:
         return _erro(str(exc))
     except IntegrityError:
@@ -89,17 +96,29 @@ def criar_carrinho():
     except ValueError as exc:
         return _erro(str(exc))
 
-@bp.get("/mensagens")
-def mensagens():
-    return fk.jsonify(listar_mensagens())
+@bp.get("/inspiracoes")
+def inspiracoes():
+    return fk.jsonify(listar_inspiracoes())
 
-@bp.post("/mensagens")
-def criar_mensagem():
-    dados = fk.request.get_json(silent=True) or {}
+@bp.post("/inspiracoes")
+def criar_inspiracao():
+    if fk.request.files:
+        dados = fk.request.form.to_dict()
+        arquivo = fk.request.files.get("imagem")
+    else:
+        dados = fk.request.get_json(silent=True) or {}
+        arquivo = None
+
     try:
-        return fk.jsonify(cadastrar_mensagem(dados)), 201
+        return fk.jsonify(cadastrar_inspiracao(dados, arquivo)), 201
     except ValueError as exc:
         return _erro(str(exc))
+    except IntegrityError:
+        return _erro("Erro de integridade ao cadastrar inspiração.", 409)
+
+@bp.get("/pedidos")
+def get_pedidos():
+    return fk.jsonify(listar_pedidos())
 
 
 

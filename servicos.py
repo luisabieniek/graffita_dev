@@ -3,13 +3,19 @@ Regras de negócio e acesso ao banco (sessão + consultas).
 Nas rotas só chamamos estas funções e devolvemos JSON — fica mais fácil de explicar.
 """
 
-from datetime import datetime
-
+import os
+from datetime import datetime, timezone
 from sqlalchemy import select
+from werkzeug.utils import secure_filename
 
 from database import SessionLocal
-from models import Produto, Usuario, Favorito, Carrinho, Endereco, Mensagem
+from models import (
+    Produto, Usuario, Favorito, Carrinho, Endereco, Inspiracao, 
+    Pedido, AvaliacaoProduto, Tag, MensagemChat
+)
+from config import UPLOAD_FOLDER
 
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
 def listar_usuarios():
@@ -52,10 +58,18 @@ def listar_carrinhos():
     finally:
         session.close()
 
-def listar_mensagens():
+def listar_pedidos():
     session = SessionLocal()
     try:
-        linhas = session.scalars(select(Mensagem).order_by(Mensagem.id)).all()
+        linhas = session.scalars(select(Pedido).order_by(Pedido.created_at.desc())).all()
+        return [p.to_dict() for p in linhas]
+    finally:
+        session.close()
+
+def listar_inspiracoes():
+    session = SessionLocal()
+    try:
+        linhas = session.scalars(select(Inspiracao).order_by(Inspiracao.id)).all()
         return [m.to_dict() for m in linhas]
     finally:
         session.close()
@@ -75,7 +89,7 @@ def _texto_opcional(valor):
 
 def cadastrar_usuario(dados):
     nome = _texto_obrigatorio(dados.get("nome"), "nome")
-    email = _texto_opcional(dados.get("email"))
+    email = _texto_obrigatorio(dados.get("email"), "email")
     senha = _texto_obrigatorio(dados.get("senha"), "senha")
     cpf = _texto_obrigatorio(dados.get("cpf"), "cpf")
 
@@ -92,13 +106,26 @@ def cadastrar_usuario(dados):
     finally:
         session.close()
 
-def cadastrar_produto(dados):
+def cadastrar_produto(dados, arquivo=None):
     nomeProduto = _texto_obrigatorio(dados.get("nomeProduto"), "nomeProduto")
-
+    id_usuario = dados.get("usuario_id")
+    estoque = int(dados.get("estoque", 1))
+    if not id_usuario:
+        raise ValueError("É necessário estar logado para cadastrar um produto.")
+        
     preco = float(_texto_obrigatorio(dados.get("preco"), "preco"))
     descricao = _texto_opcional(dados.get("descricao"))
+    inspiracao_id = dados.get("inspiracao_id")
     disponivel = dados.get("disponivel") if dados.get("disponivel") is not None else True
+    
     imagem = _texto_opcional(dados.get("imagem"))
+    if arquivo and arquivo.filename:
+        nome_seguro = secure_filename(arquivo.filename)
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        nome_final = f"{timestamp}_{nome_seguro}"
+        caminho_completo = os.path.join(UPLOAD_FOLDER, nome_final)
+        arquivo.save(caminho_completo)
+        imagem = f"/static/uploads/{nome_final}"
 
     session = SessionLocal()
     try:
@@ -106,9 +133,12 @@ def cadastrar_produto(dados):
             nomeProduto=nomeProduto,
             preco=preco,
             descricao=descricao,
+            estoque=estoque,
             disponivel=bool(disponivel),
             imagem=imagem,
-            created_at=datetime.now(),
+            usuario_id=int(id_usuario),
+            inspiracao_id=int(inspiracao_id) if inspiracao_id else None,
+            created_at=datetime.now(timezone.utc),
         )
         session.add(produto)
         session.commit()
@@ -146,13 +176,13 @@ def cadastrar_favorito(dados):
 def cadastrar_endereco(dados):
     cep = _texto_obrigatorio(dados.get("cep"), "cep")
     rua = _texto_obrigatorio(dados.get("rua"), "rua")
-    numero = dados.get("numero")
+    numero = _texto_obrigatorio(dados.get("numero"), "numero")
     bairro = _texto_obrigatorio(dados.get("bairro"), "bairro")
     cidade = _texto_obrigatorio(dados.get("cidade"), "cidade")
     estado = _texto_obrigatorio(dados.get("estado"), "estado")
     complemento = _texto_opcional(dados.get("complemento"))
     usuario_id = dados.get("usuario_id")
-    if not cep or not rua or not numero or not bairro or not cidade or not estado or not usuario_id:
+    if not usuario_id:
         raise ValueError("Todos os campos são obrigatórios.")
 
     session = SessionLocal()
@@ -198,20 +228,35 @@ def cadastrar_carrinho(dados):
     finally:
         session.close()
         
-        
-def cadastrar_mensagem(dados):
+def cadastrar_inspiracao(dados, arquivo=None):
+    titulo = _texto_obrigatorio(dados.get("titulo"), "titulo")
     descricao = _texto_obrigatorio(dados.get("descricao"), "descricao")
     usuario_id = dados.get("usuario_id")
-    if not descricao or not usuario_id:
-        raise ValueError("Os campos 'descricao' e 'usuario_id' são obrigatórios.")
+    if not usuario_id:
+        raise ValueError("O campo 'usuario_id' é obrigatório.")
+
+    imagem = _texto_opcional(dados.get("imagem"))
+    if arquivo and arquivo.filename:
+        nome_seguro = secure_filename(arquivo.filename)
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        nome_final = f"{timestamp}_{nome_seguro}"
+        caminho_completo = os.path.join(UPLOAD_FOLDER, nome_final)
+        arquivo.save(caminho_completo)
+        imagem = f"/static/uploads/{nome_final}"
 
     session = SessionLocal()
     try:
-        mensagem = Mensagem(descricao=descricao, usuario_id=usuario_id)
-        session.add(mensagem)
+        inspiracao = Inspiracao(
+            titulo=titulo,
+            descricao=descricao,
+            imagem=imagem,
+            usuario_id=int(usuario_id),
+            created_at=datetime.now(timezone.utc)
+        )
+        session.add(inspiracao)
         session.commit()
-        session.refresh(mensagem)
-        return mensagem.to_dict()
+        session.refresh(inspiracao)
+        return inspiracao.to_dict()
     except Exception:
         session.rollback()
         raise
