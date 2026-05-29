@@ -1,3 +1,5 @@
+import os
+import uuid
 import flask as fk
 from sqlalchemy.exc import IntegrityError
 
@@ -12,17 +14,26 @@ from servicos import (
     listar_endereco,
     cadastrar_carrinho,
     listar_carrinhos,
-    cadastrar_inspiracao,
-    listar_inspiracoes,
-    listar_pedidos
+    cadastrar_mensagem,
+    listar_mensagens
 )
 
 bp = fk.Blueprint("api", __name__, url_prefix="/api")
 
 
+def _obter_dados():
+    """Extrai dados de JSON, Formulários (FormData) ou Query Params."""
+    dados = {}
+    # Pega dados de formulários (multipart/form-data ou x-www-form-urlencoded)
+    if fk.request.form:
+        dados.update(fk.request.form.to_dict())
+    # Se for JSON, combina com o que já tem
+    if fk.request.is_json:
+        dados.update(fk.request.get_json(silent=True) or {})
+    return dados
+
 def _erro(mensagem, status=400):
     return fk.jsonify({"erro": mensagem}), status
-
 
 @bp.get("/usuarios")
 def get_usuarios():
@@ -31,7 +42,7 @@ def get_usuarios():
 
 @bp.post("/usuarios")
 def post_usuarios():
-    dados = fk.request.get_json(silent=True) or {}
+    dados = _obter_dados()
     try:
         return fk.jsonify(cadastrar_usuario(dados)), 201
     except ValueError as exc:
@@ -46,15 +57,25 @@ def produtos():
 
 @bp.post("/produtos")
 def criar_produtos():
-    if fk.request.files:
-        dados = fk.request.form.to_dict()
-        arquivo = fk.request.files.get("imagem")
-    else:
-        dados = fk.request.get_json(silent=True) or {}
-        arquivo = None
+    dados = _obter_dados()
+    
+    # Tratamento da Foto vinda da Galeria
+    if "imagem" in fk.request.files:
+        arquivo = fk.request.files["imagem"]
+        if arquivo and arquivo.filename != "":
+            # Garante que a pasta de uploads existe
+            pasta_uploads = os.path.join("app", "static", "uploads")
+            os.makedirs(pasta_uploads, exist_ok=True)
+            
+            # Gera um nome único para o arquivo
+            extensao = os.path.splitext(arquivo.filename)[1]
+            nome_unico = f"{uuid.uuid4()}{extensao}"
+            
+            arquivo.save(os.path.join(pasta_uploads, nome_unico))
+            dados["imagem"] = f"/static/uploads/{nome_unico}"
 
     try:
-        return fk.jsonify(cadastrar_produto(dados, arquivo)), 201
+        return fk.jsonify(cadastrar_produto(dados)), 201
     except ValueError as exc:
         return _erro(str(exc))
     except IntegrityError:
@@ -66,7 +87,7 @@ def favoritos():
 
 @bp.post("/favoritos")
 def criar_favorito():
-    dados = fk.request.get_json(silent=True) or {}
+    dados = _obter_dados()
     try:
         return fk.jsonify(cadastrar_favorito(dados)), 201
     except ValueError as exc:
@@ -78,7 +99,7 @@ def enderecos():
 
 @bp.post("/enderecos")
 def criar_endereco():
-    dados = fk.request.get_json(silent=True) or {}
+    dados = _obter_dados()
     try:
         return fk.jsonify(cadastrar_endereco(dados)), 201
     except ValueError as exc:
@@ -90,35 +111,23 @@ def carrinhos():
 
 @bp.post("/carrinhos")
 def criar_carrinho():
-    dados = fk.request.get_json(silent=True) or {}
+    dados = _obter_dados()
     try:
         return fk.jsonify(cadastrar_carrinho(dados)), 201
     except ValueError as exc:
         return _erro(str(exc))
 
-@bp.get("/inspiracoes")
-def inspiracoes():
-    return fk.jsonify(listar_inspiracoes())
+@bp.get("/mensagens")
+def mensagens():
+    return fk.jsonify(listar_mensagens())
 
-@bp.post("/inspiracoes")
-def criar_inspiracao():
-    if fk.request.files:
-        dados = fk.request.form.to_dict()
-        arquivo = fk.request.files.get("imagem")
-    else:
-        dados = fk.request.get_json(silent=True) or {}
-        arquivo = None
-
+@bp.post("/mensagens")
+def criar_mensagem():
+    dados = _obter_dados()
     try:
-        return fk.jsonify(cadastrar_inspiracao(dados, arquivo)), 201
+        return fk.jsonify(cadastrar_mensagem(dados)), 201
     except ValueError as exc:
         return _erro(str(exc))
-    except IntegrityError:
-        return _erro("Erro de integridade ao cadastrar inspiração.", 409)
-
-@bp.get("/pedidos")
-def get_pedidos():
-    return fk.jsonify(listar_pedidos())
 
 
 

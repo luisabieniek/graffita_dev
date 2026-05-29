@@ -3,7 +3,7 @@ Script didático: DDL (create/drop tables) + DML (inserts) com sessão explícit
 Execute na raiz do projeto: python setup_database.py
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlalchemy import select
 
@@ -33,21 +33,17 @@ def populate_database():
                 nomeProduto="Produto 1",
                 preco=10.00,
                 descricao="Descrição 1",
-                estoque=10,
                 disponivel=True,
                 imagem="https://placehold.co/100x100?text=Produto+1",
-                usuario_id=usuarios[0].id,
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(),
             ),
             models.Produto(
                 nomeProduto="Produto 2",
                 preco=20.00,
                 descricao="Descrição 2",
-                estoque=5,
                 disponivel=True,
                 imagem="https://placehold.co/100x100?text=Produto+2",
-                usuario_id=usuarios[1].id,
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(),
             ),
         ]
         session.add_all(produtos)
@@ -89,16 +85,14 @@ def populate_database():
         session.add_all(carrinhos)
         session.flush()
         
-        print("Inserindo inspirações...")
-        inspiracoes = [
-            models.Inspiracao(
-                titulo="Minha Primeira Inspiração",
-                descricao="Uma descrição detalhada da inspiração.",
+        print("Inserindo mensagens...")
+        mensagens = [
+            models.Mensagem(
+                descricao="Mensagem 1",
                 usuario_id=usuarios[0].id,
-                imagem="https://placehold.co/100x100?text=Inspiracao+1", # Adicionado imagem para consistência
             ),
         ]
-        session.add_all(inspiracoes)
+        session.add_all(mensagens)
         session.flush()
         
         session.commit()
@@ -109,13 +103,13 @@ def populate_database():
         nf = len(session.scalars(select(models.Favorito)).all())
         ne = len(session.scalars(select(models.Endereco)).all())
         nc = len(session.scalars(select(models.Carrinho)).all())
-        ni = len(session.scalars(select(models.Inspiracao)).all())
+        nm = len(session.scalars(select(models.Mensagem)).all())
         print(f"- Usuários: {nu}")
         print(f"- Produtos: {np}")
         print(f"- Favoritos: {nf}")
         print(f"- Endereços: {ne}")
         print(f"- Carrinhos: {nc}")
-        print(f"- Inspirações: {ni}")
+        print(f"- Mensagens: {nm}")
 
     except Exception as e:
         print(f"Ocorreu um erro: {e}")

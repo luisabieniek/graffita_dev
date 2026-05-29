@@ -3,19 +3,13 @@ Regras de negócio e acesso ao banco (sessão + consultas).
 Nas rotas só chamamos estas funções e devolvemos JSON — fica mais fácil de explicar.
 """
 
-import os
-from datetime import datetime, timezone
+from datetime import datetime
+
 from sqlalchemy import select
-from werkzeug.utils import secure_filename
 
 from database import SessionLocal
-from models import (
-    Produto, Usuario, Favorito, Carrinho, Endereco, Inspiracao, 
-    Pedido, AvaliacaoProduto, Tag, MensagemChat
-)
-from config import UPLOAD_FOLDER
+from models import Produto, Usuario, Favorito, Carrinho, Endereco, Mensagem
 
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
 def listar_usuarios():
@@ -58,18 +52,10 @@ def listar_carrinhos():
     finally:
         session.close()
 
-def listar_pedidos():
+def listar_mensagens():
     session = SessionLocal()
     try:
-        linhas = session.scalars(select(Pedido).order_by(Pedido.created_at.desc())).all()
-        return [p.to_dict() for p in linhas]
-    finally:
-        session.close()
-
-def listar_inspiracoes():
-    session = SessionLocal()
-    try:
-        linhas = session.scalars(select(Inspiracao).order_by(Inspiracao.id)).all()
+        linhas = session.scalars(select(Mensagem).order_by(Mensagem.id)).all()
         return [m.to_dict() for m in linhas]
     finally:
         session.close()
@@ -88,10 +74,15 @@ def _texto_opcional(valor):
 
 
 def cadastrar_usuario(dados):
-    nome = _texto_obrigatorio(dados.get("nome"), "nome")
-    email = _texto_obrigatorio(dados.get("email"), "email")
-    senha = _texto_obrigatorio(dados.get("senha"), "senha")
-    cpf = _texto_obrigatorio(dados.get("cpf"), "cpf")
+    # Validação robusta para identificar o campo exato que está falhando
+    for campo in ["nome", "senha", "cpf"]:
+        if not dados.get(campo) or str(dados.get(campo)).strip() == "":
+            raise ValueError(f"O campo '{campo}' é obrigatório.")
+
+    nome = str(dados.get("nome")).strip()
+    email = _texto_opcional(dados.get("email"))
+    senha = str(dados.get("senha")).strip()
+    cpf = str(dados.get("cpf")).strip()
 
     session = SessionLocal()
     try:
@@ -106,26 +97,13 @@ def cadastrar_usuario(dados):
     finally:
         session.close()
 
-def cadastrar_produto(dados, arquivo=None):
+def cadastrar_produto(dados):
     nomeProduto = _texto_obrigatorio(dados.get("nomeProduto"), "nomeProduto")
-    id_usuario = dados.get("usuario_id")
-    estoque = int(dados.get("estoque", 1))
-    if not id_usuario:
-        raise ValueError("É necessário estar logado para cadastrar um produto.")
-        
+
     preco = float(_texto_obrigatorio(dados.get("preco"), "preco"))
     descricao = _texto_opcional(dados.get("descricao"))
-    inspiracao_id = dados.get("inspiracao_id")
     disponivel = dados.get("disponivel") if dados.get("disponivel") is not None else True
-    
     imagem = _texto_opcional(dados.get("imagem"))
-    if arquivo and arquivo.filename:
-        nome_seguro = secure_filename(arquivo.filename)
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        nome_final = f"{timestamp}_{nome_seguro}"
-        caminho_completo = os.path.join(UPLOAD_FOLDER, nome_final)
-        arquivo.save(caminho_completo)
-        imagem = f"/static/uploads/{nome_final}"
 
     session = SessionLocal()
     try:
@@ -133,12 +111,9 @@ def cadastrar_produto(dados, arquivo=None):
             nomeProduto=nomeProduto,
             preco=preco,
             descricao=descricao,
-            estoque=estoque,
             disponivel=bool(disponivel),
             imagem=imagem,
-            usuario_id=int(id_usuario),
-            inspiracao_id=int(inspiracao_id) if inspiracao_id else None,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(),
         )
         session.add(produto)
         session.commit()
@@ -174,17 +149,21 @@ def cadastrar_favorito(dados):
         session.close()
         
 def cadastrar_endereco(dados):
-    cep = _texto_obrigatorio(dados.get("cep"), "cep")
-    rua = _texto_obrigatorio(dados.get("rua"), "rua")
-    numero = _texto_obrigatorio(dados.get("numero"), "numero")
-    bairro = _texto_obrigatorio(dados.get("bairro"), "bairro")
-    cidade = _texto_obrigatorio(dados.get("cidade"), "cidade")
-    estado = _texto_obrigatorio(dados.get("estado"), "estado")
-    complemento = _texto_opcional(dados.get("complemento"))
-    usuario_id = dados.get("usuario_id")
-    if not usuario_id:
-        raise ValueError("Todos os campos são obrigatórios.")
+    # Validação individual para saber exatamente qual campo falhou
+    campos = ["cep", "rua", "numero", "bairro", "cidade", "estado", "usuario_id"]
+    for c in campos:
+        if not dados.get(c) or str(dados.get(c)).strip() == "":
+            raise ValueError(f"O campo '{c}' é obrigatório no endereço.")
 
+    cep = str(dados.get("cep")).strip()
+    rua = str(dados.get("rua")).strip()
+    numero = int(dados.get("numero"))
+    bairro = str(dados.get("bairro")).strip()
+    cidade = str(dados.get("cidade")).strip()
+    estado = str(dados.get("estado")).strip()
+    complemento = _texto_opcional(dados.get("complemento"))
+    usuario_id = int(dados.get("usuario_id"))
+    
     session = SessionLocal()
     try:
         endereco = Endereco(
@@ -228,35 +207,20 @@ def cadastrar_carrinho(dados):
     finally:
         session.close()
         
-def cadastrar_inspiracao(dados, arquivo=None):
-    titulo = _texto_obrigatorio(dados.get("titulo"), "titulo")
+        
+def cadastrar_mensagem(dados):
     descricao = _texto_obrigatorio(dados.get("descricao"), "descricao")
     usuario_id = dados.get("usuario_id")
-    if not usuario_id:
-        raise ValueError("O campo 'usuario_id' é obrigatório.")
-
-    imagem = _texto_opcional(dados.get("imagem"))
-    if arquivo and arquivo.filename:
-        nome_seguro = secure_filename(arquivo.filename)
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        nome_final = f"{timestamp}_{nome_seguro}"
-        caminho_completo = os.path.join(UPLOAD_FOLDER, nome_final)
-        arquivo.save(caminho_completo)
-        imagem = f"/static/uploads/{nome_final}"
+    if not descricao or not usuario_id:
+        raise ValueError("Os campos 'descricao' e 'usuario_id' são obrigatórios.")
 
     session = SessionLocal()
     try:
-        inspiracao = Inspiracao(
-            titulo=titulo,
-            descricao=descricao,
-            imagem=imagem,
-            usuario_id=int(usuario_id),
-            created_at=datetime.now(timezone.utc)
-        )
-        session.add(inspiracao)
+        mensagem = Mensagem(descricao=descricao, usuario_id=usuario_id)
+        session.add(mensagem)
         session.commit()
-        session.refresh(inspiracao)
-        return inspiracao.to_dict()
+        session.refresh(mensagem)
+        return mensagem.to_dict()
     except Exception:
         session.rollback()
         raise
