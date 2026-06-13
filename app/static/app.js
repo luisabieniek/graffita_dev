@@ -328,5 +328,4 @@ async function init() {
     await atualizarSeletorUsuarios();
     await carregar("usuarios");
 }
-
 init();
