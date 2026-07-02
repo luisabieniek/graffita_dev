@@ -137,3 +137,8 @@ paginas = fk.Blueprint("paginas", __name__)
 @paginas.get("/")
 def home():
     return fk.render_template("index.html")
+
+
+@paginas.get("/cadastro")
+def cadastro_usuario():
+    return fk.render_template("cadastro_usuario.html")

@@ -11,6 +11,39 @@ from database import SessionLocal
 from models import Produto, Usuario, Favorito, Carrinho, Endereco, Mensagem
 
 
+import re
+
+def validar_cpf(cpf):
+    # Remove tudo que não for número
+    cpf = re.sub(r'[^0-9]', '', cpf)
+
+    # Deve ter 11 dígitos
+    if len(cpf) != 11:
+        return False
+
+    # Não pode ser todos os números iguais
+    if cpf == cpf[0] * 11:
+        return False
+
+    # Primeiro dígito verificador
+    soma = sum(int(cpf[i]) * (10 - i) for i in range(9))
+    resto = (soma * 10) % 11
+    if resto == 10:
+        resto = 0
+
+    if resto != int(cpf[9]):
+        return False
+
+    # Segundo dígito verificador
+    soma = sum(int(cpf[i]) * (11 - i) for i in range(10))
+    resto = (soma * 10) % 11
+    if resto == 10:
+        resto = 0
+
+    if resto != int(cpf[10]):
+        return False
+
+    return True
 
 def listar_usuarios():
     session = SessionLocal()
@@ -83,6 +116,11 @@ def cadastrar_usuario(dados):
     email = _texto_opcional(dados.get("email"))
     senha = str(dados.get("senha")).strip()
     cpf = str(dados.get("cpf")).strip()
+    cpf = dados.get("cpf")
+
+    if not validar_cpf(cpf):
+        raise ValueError("CPF inválido.")
+
 
     session = SessionLocal()
     try:
