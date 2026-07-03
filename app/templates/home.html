@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Página Inicial - Graffita</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <main class="cadastro-pagina">
+    <section class="cadastro-card">
+      <div class="cabecalho-card">
+        <div>
+          <p class="eyebrow">Bem-vindo</p>
+          <h1>Página inicial</h1>
+          <p>Esta é a página inicial do sistema. Aqui você pode começar a usar a aplicação ou cadastrar um novo usuário.</p>
+        </div>
+      </div>
+
+      <div class="campo">
+        <p>Use o botão abaixo para ir para o cadastro de usuários.</p>
+      </div>
+
+      <a href="/cadastro" class="botao-primario" style="display: inline-block; text-align: center; text-decoration: none; width: 100%;">Ir para cadastro</a>
+    </section>
+  </main>
+</body>
+</html>

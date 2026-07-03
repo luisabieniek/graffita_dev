@@ -47,6 +47,7 @@ form.addEventListener("submit", async (evento) => {
 
     mostrarSucesso("Usuário cadastrado com sucesso!");
     form.reset();
+    window.location.href = "/";
   } catch (erro) {
     mostrarErro("Falha ao enviar cadastro, tente novamente.");
   }

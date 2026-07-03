@@ -15,7 +15,8 @@ from servicos import (
     cadastrar_carrinho,
     listar_carrinhos,
     cadastrar_mensagem,
-    listar_mensagens
+    listar_mensagens,
+    validar_cpf
 )
 
 bp = fk.Blueprint("api", __name__, url_prefix="/api")
@@ -136,7 +137,7 @@ paginas = fk.Blueprint("paginas", __name__)
 
 @paginas.get("/")
 def home():
-    return fk.render_template("index.html")
+    return fk.render_template("home.html")
 
 
 @paginas.get("/cadastro")
