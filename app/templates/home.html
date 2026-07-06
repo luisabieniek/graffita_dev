@@ -13,15 +13,26 @@
         <div>
           <p class="eyebrow">Bem-vindo</p>
           <h1>Página inicial</h1>
-          <p>Esta é a página inicial do sistema. Aqui você pode começar a usar a aplicação ou cadastrar um novo usuário.</p>
+          {% if usuario %}
+            <p>Olá, {{ usuario.nome }}! Você já está logado e pode continuar usando o sistema.</p>
+          {% else %}
+            <p>Entre para acessar o sistema ou cadastre um novo usuário para começar.</p>
+          {% endif %}
         </div>
       </div>
 
-      <div class="campo">
-        <p>Use o botão abaixo para ir para o cadastro de usuários.</p>
-      </div>
-
-      <a href="/cadastro" class="botao-primario" style="display: inline-block; text-align: center; text-decoration: none; width: 100%;">Ir para cadastro</a>
+      {% if usuario %}
+        <div class="campo">
+          <p>Você está autenticado como <strong>{{ usuario.nome }}</strong>.</p>
+        </div>
+        <a href="/logout" class="botao-primario" style="display: inline-block; text-align: center; text-decoration: none; width: 100%;">Sair</a>
+      {% else %}
+        <div class="campo">
+          <p>Use um dos botões abaixo para continuar.</p>
+        </div>
+        <a href="/login" class="botao-primario" style="display: inline-block; text-align: center; text-decoration: none; width: 100%;">Entrar</a>
+        <a href="/cadastro" class="botao-primario" style="display: inline-block; text-align: center; text-decoration: none; width: 100%; margin-top: 12px;">Cadastrar usuário</a>
+      {% endif %}
     </section>
   </main>
 </body>

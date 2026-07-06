@@ -1,9 +1,10 @@
 import os
 import uuid
 import flask as fk
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 
 from servicos import (
+    autenticar_usuario,
     cadastrar_usuario,
     listar_usuarios,
     cadastrar_produto,
@@ -50,6 +51,29 @@ def post_usuarios():
         return _erro(str(exc))
     except IntegrityError:
         return _erro("Já existe um usuário com este e-mail ou CPF.", 409)
+    except OperationalError:
+        return _erro("Não foi possível salvar o usuário no momento. Tente novamente.", 500)
+
+
+@bp.post("/login")
+def login_usuario():
+    dados = _obter_dados()
+    try:
+        usuario = autenticar_usuario(dados)
+        fk.session["usuario_id"] = usuario["id"]
+        fk.session["usuario_nome"] = usuario["nome"]
+        fk.session["usuario_email"] = usuario["email"]
+        return fk.jsonify({"ok": True, "usuario": usuario}), 200
+    except ValueError as exc:
+        return _erro(str(exc), 401)
+    except OperationalError:
+        return _erro("Não foi possível autenticar o usuário no momento.", 500)
+
+
+@bp.post("/logout")
+def logout_usuario():
+    fk.session.clear()
+    return fk.jsonify({"ok": True}), 200
 
 
 @bp.get("/produtos")
@@ -137,9 +161,31 @@ paginas = fk.Blueprint("paginas", __name__)
 
 @paginas.get("/")
 def home():
-    return fk.render_template("home.html")
+    usuario = None
+    if fk.session.get("usuario_id"):
+        usuario = {
+            "id": fk.session.get("usuario_id"),
+            "nome": fk.session.get("usuario_nome"),
+            "email": fk.session.get("usuario_email"),
+        }
+    return fk.render_template("home.html", usuario=usuario)
+
+
+@paginas.get("/login")
+def login_page():
+    if fk.session.get("usuario_id"):
+        return fk.redirect(fk.url_for("paginas.home"))
+    return fk.render_template("login.html")
 
 
 @paginas.get("/cadastro")
 def cadastro_usuario():
+    if fk.session.get("usuario_id"):
+        return fk.redirect(fk.url_for("paginas.home"))
     return fk.render_template("cadastro_usuario.html")
+
+
+@paginas.get("/logout")
+def logout_page():
+    fk.session.clear()
+    return fk.redirect(fk.url_for("paginas.cadastro_usuario"))

@@ -1,4 +1,4 @@
-const form = document.getElementById("cadastro-form");
+const form = document.getElementById("login-form");
 const mensagemElemento = document.getElementById("mensagem");
 
 function limparMensagem() {
@@ -11,29 +11,22 @@ function mostrarErro(texto) {
   mensagemElemento.className = "mensagem erro";
 }
 
-function mostrarSucesso(texto) {
-  mensagemElemento.textContent = texto;
-  mensagemElemento.className = "mensagem sucesso";
-}
-
 form.addEventListener("submit", async (evento) => {
   evento.preventDefault();
   limparMensagem();
 
   const dados = {
-    nome: form.nome.value.trim(),
     email: form.email.value.trim(),
     senha: form.senha.value.trim(),
-    cpf: form.cpf.value.trim(),
   };
 
-  if (!dados.nome || !dados.senha || !dados.cpf) {
-    mostrarErro("Preencha todos os campos obrigatórios.");
+  if (!dados.email || !dados.senha) {
+    mostrarErro("Informe e-mail e senha.");
     return;
   }
 
   try {
-    const resposta = await fetch("/api/usuarios", {
+    const resposta = await fetch("/api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(dados),
@@ -45,10 +38,8 @@ form.addEventListener("submit", async (evento) => {
       return;
     }
 
-    mostrarSucesso("Usuário cadastrado com sucesso!");
-    form.reset();
-    window.location.href = "/login";
+    window.location.href = "/";
   } catch (erro) {
-    mostrarErro("Falha ao enviar cadastro, tente novamente.");
+    mostrarErro("Falha ao entrar, tente novamente.");
   }
 });

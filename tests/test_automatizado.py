@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock, patch
 from servicos import cadastrar_usuario
 
+
 def test_cadastrar_usuario_valido():
     
     usuario = MagicMock()

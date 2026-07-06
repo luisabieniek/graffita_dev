@@ -106,6 +106,23 @@ def _texto_opcional(valor):
     return texto or None
 
 
+def autenticar_usuario(dados):
+    email = _texto_obrigatorio(dados.get("email"), "email")
+    senha = _texto_obrigatorio(dados.get("senha"), "senha")
+
+    session = SessionLocal()
+    try:
+        usuario = session.scalar(select(Usuario).where(Usuario.email == email))
+        if usuario is None or usuario.senha != senha:
+            raise ValueError("E-mail ou senha inválidos.")
+        return usuario.to_dict()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
 def cadastrar_usuario(dados):
     # Validação robusta para identificar o campo exato que está falhando
     for campo in ["nome", "senha", "cpf"]:

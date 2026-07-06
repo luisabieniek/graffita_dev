@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Graffita</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <main class="cadastro-pagina">
+    <section class="cadastro-card">
+      <div class="cabecalho-card">
+        <div>
+          <p class="eyebrow">Acesso</p>
+          <h1>Entrar na conta</h1>
+          <p>Use seu e-mail e senha para entrar no sistema.</p>
+        </div>
+      </div>
+
+      <form id="login-form">
+        <div class="campo">
+          <label for="email">E-mail</label>
+          <input id="email" name="email" type="email" placeholder="seu@exemplo.com" required>
+        </div>
+
+        <div class="campo">
+          <label for="senha">Senha</label>
+          <input id="senha" name="senha" type="password" placeholder="Sua senha" required>
+        </div>
+
+        <p id="mensagem" class="mensagem"></p>
+
+        <button type="submit" class="botao-primario">Entrar</button>
+      </form>
+
+      <p class="link-voltar">Ainda não tem conta? <a href="/cadastro">Cadastre-se</a></p>
+    </section>
+  </main>
+  <script src="{{ url_for('static', filename='login.js') }}"></script>
+</body>
+</html>
