@@ -12,7 +12,10 @@ class Usuario(Base):
     nome = Column(String(120), nullable=False)
     email = Column(String(120), unique=True, nullable=True)
     senha = Column(String(120), nullable=False)
-    cpf = Column(String(14), unique=True, nullable=False)
+    #biografia = Column(String(120), nullable=True)
+    #satusconta = Column(Boolean, default=True)
+    #telefone = Column(String(15), nullable=True)
+    
     
     enderecos = relationship("Endereco", back_populates="usuario")
     favoritos = relationship("Favorito", back_populates="usuario")
@@ -25,7 +28,9 @@ class Usuario(Base):
             "nome": self.nome,
             "email": self.email,
             "senha": self.senha,
-            "cpf": self.cpf,
+            #"biografia": self.biografia,
+            #"satusconta": self.satusconta,
+            #"telefone": self.telefone,
         }
         
     def __repr__(self):

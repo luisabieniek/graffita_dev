@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>postar — vitrine</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body>
+
+  <header class="topbar">
+    <a class="marca" href="/"><span class="selo">vitrine</span></a>
+    <span></span>
+    <nav class="nav-acoes">
+      <a class="btn btn-escuro" href="/">voltar ao mural</a>
+    </nav>
+  </header>
+
+  <main class="pagina-central">
+    <div class="cartao" style="max-width: 480px;">
+      <h1>postar algo novo</h1>
+      <p class="subtitulo">Preenche os dados do produto pra ele aparecer no mural.</p>
+
+      <form id="form-postar">
+        <div class="campo">
+          <label for="nomeProduto">Nome do produto</label>
+          <input id="nomeProduto" type="text" placeholder="Ex: Boné street pastel" required />
+        </div>
+
+        <div class="campo">
+          <label for="preco">Preço (R$)</label>
+          <input id="preco" type="number" min="0" step="0.01" placeholder="0,00" required />
+        </div>
+
+        <div class="campo">
+          <label for="imagem">Link da imagem</label>
+          <input id="imagem" type="url" placeholder="https://..." />
+        </div>
+
+        <div class="campo">
+          <label for="descricao">Descrição</label>
+          <textarea id="descricao" rows="3" placeholder="Conta um pouco sobre a peça..."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-coral btn-bloco">postar no mural</button>
+
+        <p id="mensagem" class="mensagem"></p>
+      </form>
+    </div>
+  </main>
+
+  <script src="{{ url_for('static', filename='postar.js') }}"></script>
+</body>
+</html>

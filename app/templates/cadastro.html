@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>criar conta — vitrine</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body>
+
+  <header class="topbar">
+    <a class="marca" href="/"><span class="selo">vitrine</span></a>
+    <span></span>
+    <nav class="nav-acoes">
+      <a class="btn btn-azul" href="/login">já tenho conta</a>
+    </nav>
+  </header>
+
+  <main class="pagina-central">
+    <div class="cartao">
+      <h1>bora criar sua conta</h1>
+      <p class="subtitulo">Só nome, e-mail e senha — sem burocracia.</p>
+
+      <form id="form-cadastro">
+        <div class="campo">
+          <label for="nome">Nome</label>
+          <input id="nome" name="nome" type="text" placeholder="Como podemos te chamar?" required />
+        </div>
+
+        <div class="campo">
+          <label for="email">E-mail</label>
+          <input id="email" name="email" type="email" placeholder="voce@email.com" required />
+        </div>
+
+        <div class="campo campo-senha">
+          <label for="senha">Senha</label>
+          <input id="senha" name="senha" type="password" placeholder="••••••••" minlength="4" required />
+          <button type="button" class="alternar-senha" data-alvo="senha" aria-label="Mostrar senha">👁️</button>
+        </div>
+
+        <div class="campo campo-senha">
+          <label for="confirmar-senha">Confirmar senha</label>
+          <input id="confirmar-senha" type="password" placeholder="••••••••" minlength="4" required />
+          <button type="button" class="alternar-senha" data-alvo="confirmar-senha" aria-label="Mostrar senha">👁️</button>
+        </div>
+
+        <button type="submit" class="btn btn-coral btn-bloco">criar conta</button>
+
+        <p id="mensagem" class="mensagem"></p>
+      </form>
+
+      <p class="rodape-cartao">Já tem conta? <a href="/login">Entrar</a></p>
+    </div>
+  </main>
+
+  <script src="{{ url_for('static', filename='cadastro.js') }}"></script>
+</body>
+</html>

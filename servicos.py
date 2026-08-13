@@ -11,40 +11,6 @@ from database import SessionLocal
 from models import Produto, Usuario, Favorito, Carrinho, Endereco, Mensagem
 
 
-import re
-
-def validar_cpf(cpf):
-    # Remove tudo que não for número
-    cpf = re.sub(r'[^0-9]', '', cpf)
-
-    # Deve ter 11 dígitos
-    if len(cpf) != 11:
-        return False
-
-    # Não pode ser todos os números iguais
-    if cpf == cpf[0] * 11:
-        return False
-
-    # Primeiro dígito verificador
-    soma = sum(int(cpf[i]) * (10 - i) for i in range(9))
-    resto = (soma * 10) % 11
-    if resto == 10:
-        resto = 0
-
-    if resto != int(cpf[9]):
-        return False
-
-    # Segundo dígito verificador
-    soma = sum(int(cpf[i]) * (11 - i) for i in range(10))
-    resto = (soma * 10) % 11
-    if resto == 10:
-        resto = 0
-
-    if resto != int(cpf[10]):
-        return False
-
-    return True
-
 def listar_usuarios():
     session = SessionLocal()
     try:
@@ -125,24 +91,52 @@ def autenticar_usuario(dados):
 
 def cadastrar_usuario(dados):
     # Validação robusta para identificar o campo exato que está falhando
-    for campo in ["nome", "senha", "cpf"]:
+    for campo in ["nome", "senha"]:
         if not dados.get(campo) or str(dados.get(campo)).strip() == "":
             raise ValueError(f"O campo '{campo}' é obrigatório.")
 
     nome = str(dados.get("nome")).strip()
     email = _texto_opcional(dados.get("email"))
     senha = str(dados.get("senha")).strip()
-    cpf = str(dados.get("cpf")).strip()
-    cpf = dados.get("cpf")
-
-    if not validar_cpf(cpf):
-        raise ValueError("CPF inválido.")
-
 
     session = SessionLocal()
     try:
-        usuario = Usuario(nome=nome, email=email, senha=senha, cpf=cpf)
+        if email:
+            existente = session.scalar(select(Usuario).where(Usuario.email == email))
+            if existente is not None:
+                raise ValueError("Já existe uma conta com este e-mail.")
+
+        usuario = Usuario(nome=nome, email=email, senha=senha)
         session.add(usuario)
+        session.commit()
+        session.refresh(usuario)
+        return usuario.to_dict()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+def recuperar_senha(dados):
+    """Fluxo didático de recuperação de senha: confirma o e-mail e define uma nova senha.
+
+    Em um projeto real isso enviaria um e-mail com um link/token. Aqui, para fins
+    de estudo, a troca é feita direto após confirmar que o e-mail existe.
+    """
+    email = _texto_obrigatorio(dados.get("email"), "email")
+    nova_senha = _texto_obrigatorio(dados.get("nova_senha"), "nova_senha")
+
+    if len(nova_senha) < 4:
+        raise ValueError("A nova senha precisa ter pelo menos 4 caracteres.")
+
+    session = SessionLocal()
+    try:
+        usuario = session.scalar(select(Usuario).where(Usuario.email == email))
+        if usuario is None:
+            raise ValueError("Não encontramos nenhuma conta com esse e-mail.")
+
+        usuario.senha = nova_senha
         session.commit()
         session.refresh(usuario)
         return usuario.to_dict()

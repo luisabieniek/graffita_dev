@@ -1,34 +1,30 @@
-const form = document.getElementById("cadastro-form");
-const mensagemElemento = document.getElementById("mensagem");
+document.querySelectorAll(".alternar-senha").forEach((botao) => {
+  botao.addEventListener("click", () => {
+    const alvo = document.getElementById(botao.getAttribute("data-alvo"));
+    const visivel = alvo.type === "text";
+    alvo.type = visivel ? "password" : "text";
+    botao.textContent = visivel ? "👁️" : "🙈";
+    botao.setAttribute("aria-label", visivel ? "Mostrar senha" : "Ocultar senha");
+  });
+});
 
-function limparMensagem() {
-  mensagemElemento.textContent = "";
-  mensagemElemento.className = "mensagem";
+function mostrarMensagem(elemento, texto, tipo) {
+  elemento.textContent = texto;
+  elemento.classList.remove("sucesso", "erro");
+  elemento.classList.add("mostrar", tipo);
 }
 
-function mostrarErro(texto) {
-  mensagemElemento.textContent = texto;
-  mensagemElemento.className = "mensagem erro";
-}
-
-function mostrarSucesso(texto) {
-  mensagemElemento.textContent = texto;
-  mensagemElemento.className = "mensagem sucesso";
-}
-
-form.addEventListener("submit", async (evento) => {
+document.getElementById("form-cadastro").addEventListener("submit", async (evento) => {
   evento.preventDefault();
-  limparMensagem();
+  const mensagem = document.getElementById("mensagem");
 
-  const dados = {
-    nome: form.nome.value.trim(),
-    email: form.email.value.trim(),
-    senha: form.senha.value.trim(),
-    cpf: form.cpf.value.trim(),
-  };
+  const nome = document.getElementById("nome").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const senha = document.getElementById("senha").value;
+  const confirmarSenha = document.getElementById("confirmar-senha").value;
 
-  if (!dados.nome || !dados.senha || !dados.cpf) {
-    mostrarErro("Preencha todos os campos obrigatórios.");
+  if (senha !== confirmarSenha) {
+    mostrarMensagem(mensagem, "As senhas não são iguais.", "erro");
     return;
   }
 
@@ -36,19 +32,15 @@ form.addEventListener("submit", async (evento) => {
     const resposta = await fetch("/api/usuarios", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(dados),
+      body: JSON.stringify({ nome, email, senha }),
     });
+    const dados = await resposta.json();
+    if (!resposta.ok) throw new Error(dados.erro || "Não foi possível criar a conta.");
 
-    const corpo = await resposta.json().catch(() => ({}));
-    if (!resposta.ok) {
-      mostrarErro(corpo.erro || `Erro ${resposta.status}`);
-      return;
-    }
-
-    mostrarSucesso("Usuário cadastrado com sucesso!");
-    form.reset();
-    window.location.href = "/login";
+    localStorage.setItem("usuario", JSON.stringify(dados));
+    mostrarMensagem(mensagem, "Conta criada! Te levando pro mural...", "sucesso");
+    setTimeout(() => (window.location.href = "/"), 700);
   } catch (erro) {
-    mostrarErro("Falha ao enviar cadastro, tente novamente.");
+    mostrarMensagem(mensagem, erro.message, "erro");
   }
 });

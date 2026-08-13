@@ -21,8 +21,8 @@ def populate_database():
     try:
         print("Inserindo usuários...")
         usuarios = [
-            models.Usuario(nome="Maria Silva", email="maria@escola.example", senha="123456", cpf="123.456.789-00"),
-            models.Usuario(nome="João Santos", email="joao.santos@escola.example", senha="123456", cpf="987.654.321-00"),
+            models.Usuario(nome="Maria Silva", email="maria@escola.example", senha="123456"),
+            models.Usuario(nome="João Santos", email="joao.santos@escola.example", senha="123456"),
         ]
         session.add_all(usuarios)
         session.flush()

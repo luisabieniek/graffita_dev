@@ -1,331 +1,171 @@
-const COLUNAS = {
-  usuarios: [
-    { chave: "id", titulo: "ID" },
-    { chave: "nome", titulo: "Nome" },
-    { chave: "email", titulo: "E-mail" },
-    { chave: "cpf", titulo: "CPF" },
-  ],
-  produtos: [
-    { chave: "id", titulo: "ID" },
-    { chave: "nomeProduto", titulo: "Produto" },
-    { chave: "preco", titulo: "Preço" },
-    { chave: "disponivel", titulo: "Disp." },
-    { chave: "imagem", titulo: "Foto" },
-  ],
-  enderecos: [
-    { chave: "id", titulo: "ID" },
-    { chave: "rua", titulo: "Rua" },
-    { chave: "numero", titulo: "Nº" },
-    { chave: "cidade", titulo: "Cidade" },
-    { chave: "usuario_id", titulo: "Usuário" },
-  ],
-  favoritos: [
-    { chave: "id", titulo: "ID" },
-    { chave: "usuario_id", titulo: "ID Usuário" },
-    { chave: "produto_id", titulo: "ID Produto" },
-  ],
-  carrinhos: [
-    { chave: "id", titulo: "ID" },
-    { chave: "usuario_id", titulo: "ID Usuário" },
-    { chave: "produto_id", titulo: "ID Produto" },
-  ],
-  mensagens: [
-    { chave: "id", titulo: "ID" },
-    { chave: "descricao", titulo: "Descrição" },
-    { chave: "usuario_id", titulo: "ID Usuário" },
-  ],
-};
+const mosaico = document.getElementById("mosaico");
+const vazio = document.getElementById("vazio");
+const campoBusca = document.getElementById("campo-busca");
+const toast = document.getElementById("toast");
+const bolhaCarrinho = document.getElementById("bolha-carrinho");
+const linkConta = document.getElementById("link-conta");
 
-const TITULOS = {
-  usuarios: { lista: "Usuários", form: "Novo usuário" },
-  produtos: { lista: "Produtos", form: "Novo Produto" },
-  enderecos: { lista: "Endereços", form: "Novo Endereço" },
-  favoritos: { lista: "Favoritos", form: "Adicionar Favorito" },
-  carrinhos: { lista: "Carrinho", form: "Adicionar ao Carrinho" },
-  mensagens: { lista: "Mensagens", form: "Nova Mensagem" },
-};
+let produtos = [];
 
-const CAMPOS = {
-  usuarios: [
-    { nome: "nome", rotulo: "Nome", obrigatorio: true },
-    { nome: "email", rotulo: "E-mail", tipo: "email" },
-    { nome: "senha", rotulo: "Senha", tipo: "password", obrigatorio: true },
-    { nome: "cpf", rotulo: "CPF", obrigatorio: true },
-  ],
-  produtos: [
-    { nome: "nomeProduto", rotulo: "Nome do Produto", obrigatorio: true },
-    { nome: "preco", rotulo: "Preço", tipo: "number", obrigatorio: true },
-    { nome: "descricao", rotulo: "Descrição" },
-    { nome: "imagem", rotulo: "URL da Imagem" },
-  ],
-  enderecos: [
-    { nome: "cep", rotulo: "CEP", obrigatorio: true },
-    { nome: "rua", rotulo: "Rua", obrigatorio: true },
-    { nome: "numero", rotulo: "Número", tipo: "number", obrigatorio: true },
-    { nome: "bairro", rotulo: "Bairro", obrigatorio: true },
-    { nome: "cidade", rotulo: "Cidade", obrigatorio: true },
-    { nome: "estado", rotulo: "Estado", obrigatorio: true },
-    { nome: "usuario_id", rotulo: "Usuário", tipo: "select", origem: "usuarios", obrigatorio: true },
-  ],
-  favoritos: [
-    { nome: "usuario_id", rotulo: "Usuário", tipo: "select", origem: "usuarios", obrigatorio: true },
-    { nome: "produto_id", rotulo: "Produto", tipo: "select", origem: "produtos", obrigatorio: true },
-  ],
-  carrinhos: [
-    { nome: "usuario_id", rotulo: "Usuário", tipo: "select", origem: "usuarios", obrigatorio: true },
-    { nome: "produto_id", rotulo: "Produto", tipo: "select", origem: "produtos", obrigatorio: true },
-  ],
-  mensagens: [
-    { nome: "descricao", rotulo: "Descrição", obrigatorio: true },
-    { nome: "usuario_id", rotulo: "Usuário", tipo: "select", origem: "usuarios", obrigatorio: true },
-  ],
-};
+function usuarioLogado() {
+  try {
+    return JSON.parse(localStorage.getItem("usuario"));
+  } catch {
+    return null;
+  }
+}
 
-const elementoStatus = document.getElementById("status");
-const elementoTituloLista = document.getElementById("titulo-lista");
-const elementoTituloFormulario = document.getElementById("titulo-formulario");
-const elementoCabecalho = document.getElementById("cabecalho");
-const elementoCorpo = document.getElementById("corpo");
-const elementoCampos = document.getElementById("campos");
-const formulario = document.getElementById("formulario");
-const mensagemFormulario = document.getElementById("mensagem-formulario");
-const botaoRecarregar = document.getElementById("botao-recarregar");
-const abas = document.querySelectorAll(".aba");
-const seletorUsuarioAtivo = document.getElementById("usuario-ativo");
+function carrinho() {
+  try {
+    return JSON.parse(localStorage.getItem("carrinho")) || [];
+  } catch {
+    return [];
+  }
+}
 
-let tipoAtual = "usuarios";
-let usuarioLogadoId = null;
+function salvarCarrinho(lista) {
+  localStorage.setItem("carrinho", JSON.stringify(lista));
+  atualizarBolhaCarrinho();
+}
 
-async function buscar(tipo) {
-  const resposta = await fetch(`/api/${tipo}`);
+function atualizarBolhaCarrinho() {
+  const total = carrinho().length;
+  if (total > 0) {
+    bolhaCarrinho.style.display = "flex";
+    bolhaCarrinho.textContent = total;
+  } else {
+    bolhaCarrinho.style.display = "none";
+  }
+}
+
+function mostrarToast(texto) {
+  toast.textContent = texto;
+  toast.classList.add("mostrar");
+  setTimeout(() => toast.classList.remove("mostrar"), 2200);
+}
+
+function ajustarBarraConta() {
+  const usuario = usuarioLogado();
+  if (usuario) {
+    linkConta.textContent = usuario.nome.split(" ")[0];
+    linkConta.href = "/postar";
+  }
+}
+
+async function buscarProdutos() {
+  const resposta = await fetch("/api/produtos");
   if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`);
   return resposta.json();
 }
 
-async function carregar(tipo) {
-  tipoAtual = tipo;
-  elementoTituloLista.textContent = TITULOS[tipo].lista;
-  elementoTituloFormulario.textContent = TITULOS[tipo].form;
-  limparMensagem();
+function criarPin(produto) {
+  const article = document.createElement("article");
+  article.className = "pin";
 
-  await renderizarFormulario(tipo);
-  renderizarCabecalho(tipo);
-  elementoCorpo.innerHTML = "";
+  const imagem = produto.imagem || `https://placehold.co/400x520/AED9E0/23262e?text=${encodeURIComponent(produto.nomeProduto)}`;
 
-  elementoStatus.classList.remove("erro");
-  elementoStatus.textContent = "Carregando...";
+  article.innerHTML = `
+    ${produto.disponivel === false ? '<span class="fita">esgotado</span>' : ""}
+    <img class="pin-imagem" src="${imagem}" alt="${produto.nomeProduto}" loading="lazy" />
+    <div class="pin-corpo">
+      <p class="pin-nome">${produto.nomeProduto}</p>
+      ${produto.descricao ? `<p class="pin-desc">${produto.descricao}</p>` : ""}
+      <div class="pin-rodape">
+        <span class="preco">R$ ${Number(produto.preco).toFixed(2)}</span>
+        <div class="pin-acoes">
+          <button class="icone-btn" title="Favoritar" data-favoritar="${produto.id}">♥</button>
+          <button class="btn btn-coral" data-comprar="${produto.id}">comprar</button>
+        </div>
+      </div>
+    </div>
+  `;
+  return article;
+}
 
-  try {
-    let dados = await buscar(tipo);
-    
-    // Filtrar dados para mostrar apenas o que pertence ao usuário logado
-    const tiposPessoais = ["carrinhos", "favoritos", "enderecos", "mensagens"];
-    if (tiposPessoais.includes(tipo)) {
-      if (!usuarioLogadoId) {
-        dados = [];
-        elementoStatus.textContent = "Selecione um usuário no topo para ver seus dados.";
-      } else {
-        dados = dados.filter(item => String(item.usuario_id) === String(usuarioLogadoId));
-        elementoStatus.textContent = `${dados.length} registro(s) seu(s) carregado(s).`;
-      }
-    } else {
-      elementoStatus.textContent = `${dados.length} registro(s) carregado(s).`;
-    }
-
-    renderizarLinhas(tipo, dados);
-  } catch (erro) {
-    elementoStatus.textContent = `Falha ao carregar: ${erro.message}`;
-    elementoStatus.classList.add("erro");
+function renderizar(lista) {
+  mosaico.innerHTML = "";
+  if (lista.length === 0) {
+    vazio.style.display = "block";
+    return;
+  }
+  vazio.style.display = "none";
+  for (const produto of lista) {
+    mosaico.appendChild(criarPin(produto));
   }
 }
 
-function renderizarCabecalho(tipo) {
-  elementoCabecalho.innerHTML = "";
-  for (const coluna of COLUNAS[tipo]) {
-    const th = document.createElement("th");
-    th.textContent = coluna.titulo;
-    elementoCabecalho.appendChild(th);
-  }
-}
-
-function renderizarLinhas(tipo, dados) {
-  if (!dados.length) {
-    const tr = document.createElement("tr");
-    const td = document.createElement("td");
-    td.colSpan = COLUNAS[tipo].length;
-    td.className = "vazio";
-    td.textContent = "Nenhum registro encontrado.";
-    tr.appendChild(td);
-    elementoCorpo.appendChild(tr);
+async function comprar(produtoId) {
+  const usuario = usuarioLogado();
+  if (!usuario) {
+    mostrarToast("Entre na sua conta para comprar 🔒");
+    setTimeout(() => (window.location.href = "/login"), 900);
     return;
   }
 
-  for (const item of dados) {
-    const tr = document.createElement("tr");
-    for (const coluna of COLUNAS[tipo]) {
-      const td = document.createElement("td");
-      const valor = item[coluna.chave];
-      if (coluna.chave === "imagem" && valor) {
-        const img = document.createElement("img");
-        img.src = valor;
-        img.className = "img-tabela";
-        td.appendChild(img);
-      } else {
-        td.textContent = valor === null || valor === undefined ? "—" : valor;
-      }
-      tr.appendChild(td);
-    }
-    elementoCorpo.appendChild(tr);
-  }
-}
-
-async function renderizarFormulario(tipo) {
-  elementoCampos.innerHTML = "";
-  for (const campo of CAMPOS[tipo]) {
-    const wrapper = document.createElement("div");
-    wrapper.className = "campo";
-
-    const label = document.createElement("label");
-    label.htmlFor = `campo-${campo.nome}`;
-    label.textContent = campo.rotulo + (campo.obrigatorio ? " *" : "");
-    wrapper.appendChild(label);
-
-    if (campo.tipo === "select") {
-      const select = document.createElement("select");
-      select.id = `campo-${campo.nome}`;
-      select.name = campo.nome;
-      if (campo.obrigatorio) select.required = true;
-
-      const placeholder = document.createElement("option");
-      placeholder.value = "";
-      placeholder.textContent = "Selecione...";
-      select.appendChild(placeholder);
-
-      try {
-        const itens = await buscar(campo.origem);
-        for (const item of itens) {
-          const option = document.createElement("option");
-          option.value = item.id;
-          option.textContent = rotuloItem(campo.origem, item);
-          select.appendChild(option);
-        }
-        // Auto-selecionar se for o campo de usuário e tivermos alguém logado
-        if (campo.nome === "usuario_id" && usuarioLogadoId) {
-          select.value = usuarioLogadoId;
-        }
-      } catch (erro) {
-        const option = document.createElement("option");
-        option.disabled = true;
-        option.textContent = `Erro ao carregar: ${erro.message}`;
-        select.appendChild(option);
-      }
-
-      wrapper.appendChild(select);
-    } else {
-      const input = document.createElement("input");
-      input.type = campo.tipo || "text";
-      input.id = `campo-${campo.nome}`;
-      input.name = campo.nome;
-      if (campo.obrigatorio) input.required = true;
-      wrapper.appendChild(input);
-    }
-
-    elementoCampos.appendChild(wrapper);
-  }
-}
-
-function rotuloItem(origem, item) {
-  if (origem === "usuarios") return `${item.nome} (id ${item.id})`;
-  if (origem === "produtos") return `${item.nomeProduto} - R$ ${item.preco}`;
-  return `${item.id}`;
-}
-
-function limparMensagem() {
-  mensagemFormulario.textContent = "";
-  mensagemFormulario.classList.remove("sucesso", "erro");
-}
-
-async function enviarFormulario(evento) {
-  evento.preventDefault();
-  limparMensagem();
-
-  const dados = {};
-  for (const campo of CAMPOS[tipoAtual]) {
-    const elemento = formulario.elements[campo.nome];
-    const valor = elemento.value.trim();
-    if (campo.obrigatorio && !valor) {
-      mensagemFormulario.textContent = `Preencha ${campo.rotulo}.`;
-      mensagemFormulario.classList.add("erro");
-      elemento.focus();
-      return;
-    }
-    if (valor !== "") dados[campo.nome] = valor;
-  }
-
-  const botao = formulario.querySelector("button[type=submit]");
-  botao.disabled = true;
   try {
-    const resposta = await fetch(`/api/${tipoAtual}`, {
+    const resposta = await fetch("/api/carrinho", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(dados),
+      body: JSON.stringify({ usuario_id: usuario.id, produto_id: produtoId }),
     });
+    const dados = await resposta.json();
+    if (!resposta.ok) throw new Error(dados.erro || "Não foi possível comprar.");
 
-    const corpo = await resposta.json().catch(() => ({}));
-    if (!resposta.ok) {
-      throw new Error(corpo.erro || `HTTP ${resposta.status}`);
-    }
-
-    mensagemFormulario.textContent = "Cadastrado com sucesso.";
-    mensagemFormulario.classList.add("sucesso");
-    formulario.reset();
-    
-    // Se cadastrou um usuário, atualiza a lista de login
-    if (tipoAtual === "usuarios") {
-        await atualizarSeletorUsuarios();
-    }
-
-    await carregar(tipoAtual);
+    const lista = carrinho();
+    lista.push(dados);
+    salvarCarrinho(lista);
+    mostrarToast("Adicionado ao carrinho ✓");
   } catch (erro) {
-    mensagemFormulario.textContent = erro.message;
-    mensagemFormulario.classList.add("erro");
-  } finally {
-    botao.disabled = false;
+    mostrarToast(erro.message);
   }
 }
 
-abas.forEach((aba) => {
-  aba.addEventListener("click", () => {
-    abas.forEach((a) => a.classList.remove("ativa"));
-    aba.classList.add("ativa");
-    carregar(aba.dataset.tipo);
-  });
-});
-
-async function atualizarSeletorUsuarios() {
-    const usuarios = await buscar("usuarios");
-    const valorAntigo = seletorUsuarioAtivo.value;
-    seletorUsuarioAtivo.innerHTML = '<option value="">Ninguém selecionado</option>';
-    usuarios.forEach(u => {
-        const opt = document.createElement("option");
-        opt.value = u.id;
-        opt.textContent = u.nome;
-        seletorUsuarioAtivo.appendChild(opt);
+async function favoritar(produtoId) {
+  const usuario = usuarioLogado();
+  if (!usuario) {
+    mostrarToast("Entre na sua conta para favoritar 🔒");
+    return;
+  }
+  try {
+    const resposta = await fetch("/api/favoritos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ usuario_id: usuario.id, produto_id: produtoId }),
     });
-    seletorUsuarioAtivo.value = valorAntigo;
+    const dados = await resposta.json();
+    if (!resposta.ok) throw new Error(dados.erro || "Não foi possível favoritar.");
+    mostrarToast("Favoritado ♥");
+  } catch (erro) {
+    mostrarToast(erro.message);
+  }
 }
 
-seletorUsuarioAtivo.addEventListener("change", (e) => {
-    usuarioLogadoId = e.target.value;
-    carregar(tipoAtual);
+mosaico.addEventListener("click", (evento) => {
+  const comprarId = evento.target.getAttribute("data-comprar");
+  const favoritarId = evento.target.getAttribute("data-favoritar");
+  if (comprarId) comprar(Number(comprarId));
+  if (favoritarId) favoritar(Number(favoritarId));
 });
 
-botaoRecarregar.addEventListener("click", () => carregar(tipoAtual));
-formulario.addEventListener("submit", enviarFormulario);
+campoBusca.addEventListener("input", () => {
+  const termo = campoBusca.value.trim().toLowerCase();
+  const filtrados = produtos.filter((p) => p.nomeProduto.toLowerCase().includes(termo));
+  renderizar(filtrados);
+});
 
-// Inicialização
-async function init() {
-    await atualizarSeletorUsuarios();
-    await carregar("usuarios");
+document.getElementById("btn-carrinho").addEventListener("click", () => {
+  const total = carrinho().length;
+  mostrarToast(total > 0 ? `Você tem ${total} item(ns) no carrinho 🛒` : "Seu carrinho está vazio");
+});
+
+async function iniciar() {
+  ajustarBarraConta();
+  atualizarBolhaCarrinho();
+  try {
+    produtos = await buscarProdutos();
+    renderizar(produtos);
+  } catch (erro) {
+    vazio.style.display = "block";
+    vazio.querySelector("p").textContent = "Não foi possível carregar os produtos.";
+  }
 }
-init();
