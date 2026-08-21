@@ -1,11 +1,11 @@
 :root {
---coral: #FFA69E;
---creme: #FAF3DD;
---menta: #B8F2E6;
---azul: #AED9E0;
---chumbo: #5e6472;
+--coral: #b0b79c;
+--creme: #6e5124;
+--menta: #6e5124;
+--azul: #6e5124;
+--chumbo: #3b3b3b;
 --tinta: #23262e;
---branco: #fffdf8;
+--branco: #548037;
 
 --borda: 3px solid var(--tinta);
 --sombra-sticker: 6px 6px 0 var(--tinta);
@@ -177,7 +177,7 @@ border-bottom: var(--borda);
 
 .pin-corpo { padding: 14px; }
 .pin-nome { font-weight: 700; font-size: 1.02rem; margin: 0 0 6px; }
-.pin-desc { font-size: 0.85rem; color: var(--chumbo); margin: 0 0 12px; line-height: 1.35; }
+.pin-desc { font-size: 0.85rem; color: var(); margin: 0 0 12px; line-height: 1.35; }
 
 .pin-rodape {
 display: flex;

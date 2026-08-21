@@ -1,44 +1,39 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>vitrine — o mural</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Página Inicial - Graffita</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
+  <main class="cadastro-pagina">
+    <section class="cadastro-card">
+      <div class="cabecalho-card">
+        <div>
+          <p class="eyebrow">Bem-vindo</p>
+          <h1>Página inicial</h1>
+          {% if usuario %}
+            <p>Olá, {{ usuario.nome }}! Você já está logado e pode continuar usando o sistema.</p>
+          {% else %}
+            <p>Entre para acessar o sistema ou cadastre um novo usuário para começar.</p>
+          {% endif %}
+        </div>
+      </div>
 
-  <header class="topbar">
-    <a class="marca" href="/">
-      <span class="selo">vitrine</span>
-    </a>
-
-    <form class="busca" onsubmit="return false">
-      <input id="campo-busca" type="text" placeholder="Buscar no mural..." />
-    </form>
-
-    <nav class="nav-acoes">
-      <a class="btn btn-menta" href="/postar">+ postar</a>
-      <button id="btn-carrinho" class="btn btn-azul contador-carrinho" type="button">
-        carrinho <span id="bolha-carrinho" class="bolha" style="display:none">0</span>
-      </button>
-      <a id="link-conta" class="btn btn-escuro" href="/login">entrar</a>
-    </nav>
-  </header>
-
-  <main class="conteudo">
-    <div class="cabecalho-secao">
-      <h1>o que a galera <span class="tarja">postou</span> hoje</h1>
-    </div>
-
-    <div id="mosaico" class="mosaico"></div>
-    <div id="vazio" class="vazio" style="display:none">
-      <p>Ainda não tem nada postado. <a href="/postar">Seja a primeira pessoa a postar!</a></p>
-    </div>
+      {% if usuario %}
+        <div class="campo">
+          <p>Você está autenticado como <strong>{{ usuario.nome }}</strong>.</p>
+        </div>
+        <a href="/logout" class="botao-primario" style="display: inline-block; text-align: center; text-decoration: none; width: 100%;">Sair</a>
+      {% else %}
+        <div class="campo">
+          <p>Use um dos botões abaixo para continuar.</p>
+        </div>
+        <a href="/login" class="botao-primario" style="display: inline-block; text-align: center; text-decoration: none; width: 100%;">Entrar</a>
+        <a href="/cadastro" class="botao-primario" style="display: inline-block; text-align: center; text-decoration: none; width: 100%; margin-top: 12px;">Cadastrar usuário</a>
+      {% endif %}
+    </section>
   </main>
-
-  <div id="toast" class="toast"></div>
-
-  <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>
